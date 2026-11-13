@@ -1,0 +1,14 @@
+{
+  "name": "Vorticis Architecture",
+  "short_name": "Vorticis Arch",
+  "description": "CAD arquitetônico no navegador: plantas, paredes, portas, janelas, terreno, fotos e 3D.",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#15191e",
+  "theme_color": "#1b2026",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
