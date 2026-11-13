@@ -21,6 +21,8 @@ Não precisa de instalação nem de servidor. É um único arquivo HTML, funcion
 | **Modificar** | Mover, copiar, rotacionar, espelhar, escala, apagar, alças (grips) para editar pontos, arrastar para mover, desfazer/refazer ilimitado e copiar/colar. |
 | **Precisão** | Snap a extremidade, ponto médio, centro e interseção; grade; passo do cursor; modo ortogonal. |
 | **Entrada de valores** | `5` (comprimento na direção do mouse), `3;4` (absoluto), `@2;0` (relativo), `@5<45` (distância e ângulo), `10x20` (largura × altura). |
+| **Foto → desenho** (`FD`) | Anexe a foto ou o escaneamento de uma planta (`IM`), informe a largura real e o programa **gera o desenho sozinho**: paredes com espessura, portas e janelas nos vãos e ambientes com área. Funciona com paredes preenchidas ou desenhadas só pelo contorno, e mostra uma pré-visualização antes de criar. Roda **offline e de graça**. Para fotos difíceis ou croquis à mão, há a opção de usar a IA Claude. |
+| **Assistente IA** (`IA`) | Analisa o projeto e sugere o que fazer nos **espaços vazios**, com um botão para aplicar cada sugestão. No terreno, sugere vaga de garagem, jardim frontal, área de lazer com piscina, espaço para ampliação e quintal, e mostra os índices de ocupação e de área livre. Nos ambientes, sugere nome pelo tamanho, **mobília automática** que não bloqueia portas, janelas para iluminação (1/6 ou 1/8 da área do piso) e avisos de ambiente sem porta ou pequeno demais. Opcionalmente, você pode **perguntar à IA Claude** em linguagem natural. |
 | **Camadas** | Cor, visibilidade e travamento. Cada tipo de objeto vai automaticamente para a sua camada. |
 | **Vista 3D** | Paredes extrudadas com vãos de portas e janelas, piso dos ambientes, terreno e mobiliário. É possível girar, mover e dar zoom. |
 | **Relatórios** | Quadro de áreas com terreno, área edificável, ambientes, área construída estimada e taxa de ocupação. Pode ser exportado em CSV. |
@@ -33,6 +35,15 @@ Não precisa de instalação nem de servidor. É um único arquivo HTML, funcion
 ## Onde ficam os dados
 
 Os projetos ficam salvos no próprio navegador (IndexedDB) do computador ou celular que você está usando. Para levar um projeto para outro aparelho, ou para guardar uma cópia de segurança, use **Exportar → Backup do projeto (JSON)** e depois **Importar** no outro aparelho.
+
+## IA Claude (opcional)
+
+A detecção de paredes e as sugestões funcionam **sem internet e sem custo**. Para usar a IA Claude (leitura de fotos e croquis mais difíceis e perguntas livres sobre o projeto):
+
+1. Crie uma chave de API em console.anthropic.com. O uso é cobrado na sua conta da Anthropic.
+2. No app, abra **Assistente IA → Configurar IA** e cole a chave.
+
+A chave fica salva só no seu navegador e é enviada diretamente para a API da Anthropic, porque o app não tem servidor. Não use esse recurso em computadores compartilhados. O modelo usado é o `claude-opus-5-5`.
 
 ## Estrutura
 
@@ -50,4 +61,5 @@ icon.svg              ícone
 - Folha de impressão com carimbo e escala exata (1:50, 1:100)
 - Hachuras e mais blocos de mobiliário
 - Telhado e escadas no 3D
+- Detecção de paredes inclinadas e curvas na conversão de fotos
 - Sincronização na nuvem (por exemplo, Supabase no plano gratuito) para usar os mesmos projetos em vários dispositivos

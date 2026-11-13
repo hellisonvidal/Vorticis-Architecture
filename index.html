@@ -116,6 +116,18 @@ table.t input{width:90px}
 .help-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 18px}
 .mobile-only{display:none}
 #printArea{display:none}
+.pill{font-size:10px;text-transform:none;letter-spacing:0;padding:1px 7px;border-radius:9px;border:1px solid var(--line);color:var(--muted)}
+.pill.on{color:#fff;background:var(--ok);border-color:var(--ok)}
+.sug{border:1px solid var(--line);border-radius:8px;padding:7px 8px;margin-bottom:6px;background:var(--panel2)}
+.sug:hover{border-color:var(--warn)}
+.sugT{font-weight:600;margin-bottom:2px}
+.sugX{color:var(--muted);font-size:12px}
+.sug .btnrow{margin-top:5px}.sug button{padding:3px 8px;font-size:12px}
+.aiAns{margin-top:6px;font-size:12.5px;line-height:1.45}
+.err{color:var(--danger)}
+.photoWrap{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:16px}
+.pvc{width:100%;max-width:560px;height:auto;border:1px solid var(--line);border-radius:6px;background:#fff;display:block}
+@media (max-width:900px){.photoWrap{grid-template-columns:1fr}}
 @media print{
   body *{visibility:hidden}
   #printArea,#printArea *{visibility:visible}
@@ -166,6 +178,7 @@ table.t input{width:90px}
         <button data-act="print">Imprimir / PDF</button>
       </div></details>
       <button data-act="import" title="Importar backup JSON">Importar</button>
+      <button data-act="ai" title="Sugestões para os espaços vazios">✨ Assistente IA</button>
       <button data-act="areas">Quadro de áreas</button>
       <button data-act="settings">Configurações</button>
       <button data-act="help">Ajuda</button>
@@ -204,6 +217,13 @@ table.t input{width:90px}
     </section>
     <aside id="panel">
       <section><h3>Propriedades</h3><div id="props"></div></section>
+      <section id="aiSec"><h3>Assistente IA <span id="aiStatus" class="pill">modo local</span></h3>
+        <div class="btnrow" style="margin-top:0"><button type="button" id="aiAnalyze" class="primary">Analisar espaços vazios</button><button type="button" id="aiCfg">Configurar IA</button></div>
+        <div id="aiList" style="margin-top:8px"><div class="muted">Clique em "Analisar" para receber sugestões de uso para áreas livres do terreno, ambientes vazios, janelas e garagem.</div></div>
+        <div style="margin-top:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">Pergunte à IA Claude (opcional)</div>
+          <textarea id="aiQ" rows="2" style="width:100%" placeholder="Ex.: O que fazer com o fundo do lote? Onde colocar a área gourmet?"></textarea>
+          <div class="btnrow"><button type="button" id="aiAsk">Perguntar</button></div><div id="aiAnswer" class="aiAns"></div></div>
+      </section>
       <section><h3>Camadas <button id="addLayer" title="Nova camada">+ Nova</button></h3><div id="layers"></div></section>
     </aside>
   </div>
@@ -314,6 +334,10 @@ const BLOCKS={
   geladeira:{name:'Geladeira',w:.7,d:.7,h:1.8,draw:(w,d)=>{const x=w/2,y=d/2;return[pl(rectL(-x,-y,x,y)),pl(rectL(-x+.05,-y+.05,x-.05,y-.05),true,{lw:.5}),pl([P(-x,-y),P(x,y)],false,{lw:.5})];}},
   guarda_roupa:{name:'Guarda-roupa',w:1.6,d:.6,h:2.1,draw:(w,d)=>{const x=w/2,y=d/2;return[pl(rectL(-x,-y,x,y)),pl([P(-x,0),P(x,0)],false,{lw:.5,dash:[5,3]}),pl([P(0,-y),P(0,y)],false,{lw:.6})];}},
   carro:{name:'Carro',w:1.8,d:4.3,h:1.5,draw:(w,d)=>{const x=w/2,y=d/2;const body=[P(-x+.15,-y),P(x-.15,-y),P(x,-y+.3),P(x,y-.4),P(x-.2,y),P(-x+.2,y),P(-x,y-.4),P(-x,-y+.3)];return[pl(body),pl([P(-x+.15,y-1.2),P(x-.15,y-1.2),P(x-.25,y-.65),P(-x+.25,y-.65)]),pl([P(-x+.18,-y+.9),P(x-.18,-y+.9),P(x-.25,-y+.45),P(-x+.25,-y+.45)])];}},
+  escrivaninha:{name:'Escrivaninha',w:1.2,d:.6,h:.75,draw:(w,d)=>{const x=w/2,y=d/2;return[pl(rectL(-x,-y,x,y)),...chair(0,-y-.22,Math.PI)];}},
+  tanque:{name:'Tanque',w:.6,d:.55,h:.9,draw:(w,d)=>{const x=w/2,y=d/2;return[pl(rectL(-x,-y,x,y)),pl(rectL(-x+.06,-y+.06,x-.06,y-.15)),ci(P(0,y-.08),.025)];}},
+  maquina:{name:'Máquina de lavar',w:.6,d:.6,h:.9,draw:(w,d)=>{const x=w/2,y=d/2;return[pl(rectL(-x,-y,x,y)),ci(P(0,-.03),Math.min(x,y)*.7),pl([P(-x,y-.1),P(x,y-.1)],false,{lw:.6})];}},
+  piscina:{name:'Piscina',w:3,d:6,h:.05,draw:(w,d)=>{const x=w/2,y=d/2,a=[pl(rectL(-x,-y,x,y),true,{lw:1.4}),pl(rectL(-x+.15,-y+.15,x-.15,y-.15),true,{lw:.6})];for(let i=1;i<=3;i++)a.push(pl([P(-x+.15,y-.15-i*.3),P(-x+.9,y-.15-i*.3)],false,{lw:.5}));for(let k=-1;k<=1;k++)a.push(pl([P(-x*.5,k*d/5),P(-x*.2,k*d/5+.12),P(x*.1,k*d/5),P(x*.4,k*d/5+.12)],false,{lw:.5,dash:[3,2]}));return a;}},
   arvore:{name:'Árvore',w:3,d:3,h:4,draw:(w)=>{const r=w/2,a=[ci(P(0,0),r,{lw:.8}),ci(P(0,0),r*.12)];for(let i=0;i<8;i++){const t=i*Math.PI/4;a.push(pl([P(Math.cos(t)*r*.12,Math.sin(t)*r*.12),P(Math.cos(t)*r*.8,Math.sin(t)*r*.8)],false,{lw:.5}));}return a;}},
 };
 
@@ -493,7 +517,8 @@ function commit(){const s=snapshot();if(s===lastState)return;undoStack.push(last
 function restoreState(s){const o=JSON.parse(s);doc.layers=o.layers;doc.objects=o.objects;doc.activeLayer=o.activeLayer;for(const id of[...sel])if(!getObj(id))sel.delete(id);lastState=s;changed();}
 function undo(){if(!undoStack.length)return log('Nada para desfazer.');redoStack.push(snapshot());restoreState(undoStack.pop());log('Desfeito.');}
 function redo(){if(!redoStack.length)return log('Nada para refazer.');undoStack.push(snapshot());restoreState(redoStack.pop());log('Refeito.');}
-function changed(){scheduleSave();buildProps();buildLayers();redraw();if(mode3d)render3D();}
+let aiTimer=null;
+function changed(){if(typeof aiSuggestions!=='undefined'&&aiSuggestions.length){clearTimeout(aiTimer);aiTimer=setTimeout(()=>runAnalysis(),700);}scheduleSave();buildProps();buildLayers();redraw();if(mode3d)render3D();}
 
 /* ---------- canvas 2D ---------- */
 const cv=$('#cv'),ctx=cv.getContext('2d'),cv3=$('#cv3'),g3=cv3.getContext('2d');
@@ -560,6 +585,7 @@ function render(){
   if(hoverId&&!sel.has(hoverId)){const o=getObj(hoverId);if(o)drawObj(g,o,R,{stroke:R.hover,lw:4});}
   for(const id of sel){const o=getObj(id);if(o)drawObj(g,o,R,{stroke:R.sel,lw:2,dash:[6,4]});}
   if(tool&&tool.preview){const pv=tool.preview();if(pv){(pv.objs||[]).forEach(o=>{o.layer=o.layer||layerFor(o.type);drawObj(g,o,R);});(pv.prims||[]).forEach(pr=>drawPrim(g,pr,null,R,{stroke:R.accent,lw:1,dash:[5,4]}));}}
+  if(aiHighlight){drawPrim(g,{k:'poly',pts:aiHighlight,closed:true,fill:'#ffb020',fillAlpha:.22,stroke:'#ffb020',lw:2.5,dash:[8,4]},null,R);}
   if(measureOverlay)measureOverlay.forEach(pr=>drawPrim(g,pr,null,R,{stroke:'#ffb020',lw:1.6,dash:[6,3]}));
   g.setTransform(DPR,0,0,DPR,0,0);
   // grips
@@ -754,7 +780,7 @@ Tools.calibrate=(id)=>{
   const t={a:null,b:null,get base(){return t.a;},prompt:'CALIBRAR IMAGEM — clique o 1º ponto de uma medida conhecida na foto',
     get wantValue(){return !!(t.a&&t.b);},
     point(p){if(!t.a){t.a=p;setPrompt('CALIBRAR — 2º ponto da medida');return;}if(!t.b){if(dist(p,t.a)<1e-9)return;t.b=p;setPrompt('CALIBRAR — digite a distância real em metros (ex.: 12,5) e Enter');return;}},
-    value(v){const d=num(v);if(t.a&&t.b&&d>0){const k=d/dist(t.a,t.b),o=getObj(id);o.p=add(t.a,mul(sub(o.p,t.a),k));o.w*=k;o.h*=k;commit();log('Imagem calibrada: fator '+fmt(k,4)+'. Agora a foto está em escala real.','res');endTool();zoomExtents();return true;}return false;},
+    value(v){const d=num(v);if(t.a&&t.b&&d>0){const k=d/dist(t.a,t.b),o=getObj(id);o.p=add(t.a,mul(sub(o.p,t.a),k));o.w*=k;o.h*=k;o.calibrated=true;commit();log('Imagem calibrada: fator '+fmt(k,4)+'. Agora a foto está em escala real.','res');endTool();zoomExtents();return true;}return false;},
     preview(){if(t.a&&!t.b)return{prims:[{k:'poly',pts:[t.a,cur()],closed:false}]};if(t.a&&t.b)return{prims:[{k:'poly',pts:[t.a,t.b],closed:false}]};return null;}};
   return t;
 };
@@ -917,6 +943,7 @@ const IC={
   move:'<path d="M12 3v18M3 12h18M12 3l-3 3 3-3 3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/>',copy:'<rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16V4h12"/>',
   rotate:'<path d="M20 12a8 8 0 1 1-3-6.2M20 4v5h-5"/>',mirror:'<path d="M12 3v18" stroke-dasharray="2 2"/><path d="M9 6L3 18h6zM15 6l6 12h-6z"/>',
   scale:'<rect x="3" y="11" width="10" height="10"/><path d="M13 11l8-8M15 3h6v6"/>',erase:'<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
+  photo2d:'<rect x="2" y="5" width="10" height="14" rx="1"/><circle cx="6" cy="10" r="1.5"/><path d="M13 12h3M15 10l2 2-2 2"/><path d="M18 6h4v12h-4z" fill="currentColor" fill-opacity=".25"/>',assistant:'<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z"/>',
   measure:'<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>',area:'<path d="M4 4h16v16H4z"/><path d="M4 12l8-8M4 20L20 4M12 20l8-8" stroke-width="1"/>',
 };
 const TOOLBAR=[
@@ -925,6 +952,7 @@ const TOOLBAR=[
   ['Arquitetura',[['wall','Parede (PA)'],['wallrect','Paredes retangulares (PR)'],['door','Porta (PO)'],['window','Janela (JA)'],['room','Ambiente com área (AM)'],['block','Mobiliário (B)']]],
   ['Anotação',[['dim','Cota (CO)'],['text','Texto (T)']]],
   ['Terreno',[['terrainDlg','Terreno por dimensões (TE)'],['terrain','Terreno desenho livre (TL)'],['image','Anexar foto / imagem (IM)']]],
+  ['IA',[['photo2d','Foto → desenho automático (FD)'],['assistant','Assistente IA: sugestões (IA)']]],
   ['Modificar',[['move','Mover (M)'],['copy','Copiar (CP)'],['rotate','Rotacionar (RO)'],['mirror','Espelhar (ES)'],['scale','Escala (ESC)'],['erase','Apagar (Del)']]],
   ['Medir',[['measure','Distância (DI)'],['area','Área (AR)']]],
 ];
@@ -996,7 +1024,7 @@ function buildProps(){
     case 'dim':F.push(field('Medida','ro',()=>fmt(dist(o.a,o.b))+' m'),field('Afastamento','num',()=>o.off,v=>{o.off=v;}),field('Texto (opcional)','text',()=>o.text||'',v=>{o.text=v;}),field('Tamanho','num',()=>o.size||S().dimSize,v=>{if(v>0)o.size=v;}));break;
     case 'text':F.push(field('Texto','textarea',()=>o.text,v=>{o.text=v;}),field('Tamanho','num',()=>o.size||S().textSize,v=>{if(v>0)o.size=v;}),field('Ângulo (°)','num',()=>(o.ang||0)*R2D,v=>{o.ang=v*D2R;},{dec:1}),...ptFields('Posição',o,'p'));break;
     case 'image':F.push(field('Largura (m)','num',()=>o.w,v=>{if(v>0){o.h=o.h*v/o.w;o.w=v;}}),field('Altura (m)','num',()=>o.h,v=>{if(v>0){o.w=o.w*v/o.h;o.h=v;}}),field('Rotação (°)','num',()=>(o.rot||0)*R2D,v=>{o.rot=v*D2R;},{dec:1}),field('Opacidade','range',()=>o.opacity??1,v=>{o.opacity=v;}),...ptFields('Canto',o,'p'),
-      field('📏 Calibrar escala pela foto','button',null,()=>startTool('calibrate',o.id)));break;
+      field('📏 Calibrar escala pela foto','button',null,()=>startTool('calibrate',o.id)),field('🪄 Gerar desenho a partir da foto','button',null,()=>photoDialog(o.id)));break;
     case 'block':{const B=BLOCKS[o.kind];F.push(field('Tipo','select',()=>o.kind,v=>{o.kind=v;o.w=BLOCKS[v].w;o.d=BLOCKS[v].d;},{options:Object.entries(BLOCKS).map(([k,b])=>[k,b.name])}),field('Largura','num',()=>o.w||B.w,v=>{if(v>0)o.w=v;}),field('Profundidade','num',()=>o.d||B.d,v=>{if(v>0)o.d=v;}),field('Rotação (°)','num',()=>(o.rot||0)*R2D,v=>{o.rot=v*D2R;},{dec:1}),field('Espelhado','check',()=>!!o.mirror,v=>{o.mirror=v;}),...ptFields('Posição',o,'p'));break;}
   }
   F.push(field('Apagar','button',null,()=>eraseSel(),{cls:'danger'}));
@@ -1133,7 +1161,7 @@ function settingsDialog(){
     scheduleSave();buildLayers();updateToolUI();redraw();return true;}}]);
 }
 function helpDialog(){
-  const cmds=[['TE','Terreno por dimensões (retangular, lados/ângulos, coordenadas)'],['TL','Terreno desenho livre'],['IM','Anexar foto/imagem (depois: Calibrar escala)'],['PA','Parede (encadeada)'],['PR','Paredes retangulares (ex.: 8x12)'],['PO / JA','Porta / Janela sobre parede'],['AM','Ambiente com área automática'],['B','Mobiliário (camas, sofá, banheiro, cozinha, carro, árvore)'],['L / PL','Linha / Polilinha'],['REC / C','Retângulo / Círculo'],['CO','Cota alinhada'],['T','Texto'],['M / CP','Mover / Copiar'],['RO / ES / ESC','Rotacionar / Espelhar / Escala'],['DI / AR','Medir distância / área'],['QA','Quadro de áreas'],['Z','Enquadrar tudo'],['3D / 2D','Alternar vistas'],['U / REF','Desfazer / Refazer']];
+  const cmds=[['TE','Terreno por dimensões (retangular, lados/ângulos, coordenadas)'],['TL','Terreno desenho livre'],['IM','Anexar foto/imagem (depois: Calibrar escala)'],['FD','Foto → desenho automático (paredes, portas, janelas, ambientes)'],['IA','Assistente: sugestões para espaços vazios'],['PA','Parede (encadeada)'],['PR','Paredes retangulares (ex.: 8x12)'],['PO / JA','Porta / Janela sobre parede'],['AM','Ambiente com área automática'],['B','Mobiliário (camas, sofá, banheiro, cozinha, carro, árvore)'],['L / PL','Linha / Polilinha'],['REC / C','Retângulo / Círculo'],['CO','Cota alinhada'],['T','Texto'],['M / CP','Mover / Copiar'],['RO / ES / ESC','Rotacionar / Espelhar / Escala'],['DI / AR','Medir distância / área'],['QA','Quadro de áreas'],['Z','Enquadrar tudo'],['3D / 2D','Alternar vistas'],['U / REF','Desfazer / Refazer']];
   const keys=[['Enter / Espaço / botão direito','Confirmar, terminar ou repetir último comando'],['Esc','Cancelar / limpar seleção'],['Delete','Apagar seleção'],['Ctrl+Z / Ctrl+Y','Desfazer / Refazer'],['Ctrl+C / Ctrl+V','Copiar / Colar no cursor'],['Ctrl+A','Selecionar tudo'],['Ctrl+S','Salvar'],['F3 / F7 / F8 / F9','OSNAP / Grade / Orto / Passo'],['Roda do mouse','Zoom no cursor'],['Botão do meio','Mover a vista'],['R (porta/mobiliário)','Inverter dobradiça / girar 90°']];
   const inputs=[['5','Comprimento na direção do cursor'],['3;4','Coordenada absoluta X;Y'],['@2;0','Relativa ao último ponto'],['@5<45','Distância e ângulo'],['10x20','Largura × altura (retângulos, paredes, ambientes)'],['F','Fechar polígono'],['D','Desfazer último vértice']];
   const tbl=a=>'<table class="t">'+a.map(([k,v])=>'<tr><td><span class="kbd">'+esc(k)+'</span></td><td>'+esc(v)+'</td></tr>').join('')+'</table>';
@@ -1167,7 +1195,7 @@ function build3D(){
     if(o.type==='terrain')quad(o.pts.map(p=>({x:p.x,y:p.y,z:-.02})),[96,150,84],true);
     if(o.type==='room')quad(o.pts.map(p=>({x:p.x,y:p.y,z:.01})),[206,184,150],true);
     if(o.type==='image'){/* fotos não são exibidas em 3D */}
-    if(o.type==='block'){const B=BLOCKS[o.kind];if(!B)continue;const w=o.w||B.w,d=o.d||B.d,T=q=>add(o.p,rotV(q,o.rot||0));const fp=rectL(-w/2,-d/2,w/2,d/2).map(T);if(o.kind==='arvore'){box(rectL(-.12,-.12,.12,.12).map(T),0,2.2,[120,90,60]);box(ellL(0,0,w/2,d/2,10).map(T),2.2,B.h,[70,140,70]);}else box(fp,0,B.h,o.kind==='carro'?[170,60,60]:[150,170,200]);}
+    if(o.type==='block'){const B=BLOCKS[o.kind];if(!B)continue;const w=o.w||B.w,d=o.d||B.d,T=q=>add(o.p,rotV(q,o.rot||0));const fp=rectL(-w/2,-d/2,w/2,d/2).map(T);if(o.kind==='arvore'){box(rectL(-.12,-.12,.12,.12).map(T),0,2.2,[120,90,60]);box(ellL(0,0,w/2,d/2,10).map(T),2.2,B.h,[70,140,70]);}else box(fp,o.kind==='piscina'?-.02:0,B.h,o.kind==='carro'?[170,60,60]:o.kind==='piscina'?[70,160,225]:[150,170,200]);}
   }
   for(const w of doc.objects){if(w.type!=='wall'||!vis(w))continue;
     const{L,u,n}=wallInfo(w),[ea,eb]=wallExt(w),H=w.h||S().wallH,t=w.t/2,col=[228,224,216];
@@ -1313,11 +1341,462 @@ $$('[data-act]').forEach(b=>b.addEventListener('click',()=>{const d=b.closest('d
 $$('.dd').forEach(d=>d.addEventListener('toggle',()=>{if(d.open){const r=d.querySelector('summary').getBoundingClientRect(),m=d.querySelector('div');m.style.left=Math.min(r.left,innerWidth-220)+'px';m.style.top=r.bottom+'px';}}));
 document.addEventListener('click',e=>{$$('.dd[open]').forEach(d=>{if(!d.contains(e.target))d.open=false;});});
 
+/* =========================================================================
+   FOTO → DESENHO  (detecção local de paredes, aberturas e ambientes)
+   ========================================================================= */
+function imgPixels(o,maxDim){
+  const im=getImg(o.img);if(!im)return null;
+  const k=Math.min(1,maxDim/Math.max(im.naturalWidth,im.naturalHeight));
+  const w=Math.max(1,Math.round(im.naturalWidth*k)),h=Math.max(1,Math.round(im.naturalHeight*k));
+  const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
+  g.fillStyle='#fff';g.fillRect(0,0,w,h);g.drawImage(im,0,0,w,h);
+  return{w,h,data:g.getImageData(0,0,w,h).data,canvas:c};
+}
+// máscara de pixels escuros (limiar adaptativo + Otsu): funciona com escaneamento e com foto de celular
+function darkMask(px,sens){
+  const{w,h,data}=px,n=w*h,gr=new Float32Array(n);
+  for(let i=0;i<n;i++)gr[i]=.299*data[4*i]+.587*data[4*i+1]+.114*data[4*i+2];
+  const W1=w+1,I=new Float64Array(W1*(h+1));
+  for(let y=0;y<h;y++){let s=0;for(let x=0;x<w;x++){s+=gr[y*w+x];I[(y+1)*W1+x+1]=I[y*W1+x+1]+s;}}
+  const hist=new Array(256).fill(0);for(let i=0;i<n;i++)hist[Math.min(255,gr[i]|0)]++;
+  let sum=0;for(let t=0;t<256;t++)sum+=t*hist[t];let sB=0,wB=0,best=0,thr=128;
+  for(let t=0;t<256;t++){wB+=hist[t];if(!wB)continue;const wF=n-wB;if(!wF)break;sB+=t*hist[t];const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)*(mB-mF);if(v>best){best=v;thr=t;}}
+  const r=Math.max(8,Math.round(Math.max(w,h)/30)),k=.30-.25*sens,m=new Uint8Array(n);
+  for(let y=0;y<h;y++){const y0=Math.max(0,y-r),y1=Math.min(h,y+r+1);
+    for(let x=0;x<w;x++){const x0=Math.max(0,x-r),x1=Math.min(w,x+r+1),A=(y1-y0)*(x1-x0);
+      const s=I[y1*W1+x1]-I[y0*W1+x1]-I[y1*W1+x0]+I[y0*W1+x0],v=gr[y*w+x];
+      m[y*w+x]=((v<s/A*(1-k)&&v<thr+25)||v<thr*.55)?1:0;}}
+  return m;
+}
+// agrupa trechos escuros consecutivos em "faixas" (candidatas a parede)
+function findBands(get,nR,nC,minLen){
+  let active=[];const out=[];
+  for(let r=0;r<nR;r++){
+    const runs=[];let c=0;
+    while(c<nC){if(get(r,c)){let e=c;while(e+1<nC&&get(r,e+1))e++;if(e-c+1>=minLen)runs.push([c,e]);c=e+1;}else c++;}
+    const next=[];
+    for(const[c0,c1]of runs){
+      let hit=null;
+      for(const b of active){if(b.used)continue;const ov=Math.min(c1,b.c1)-Math.max(c0,b.c0)+1;if(ov>.6*Math.min(c1-c0+1,b.c1-b.c0+1)){hit=b;break;}}
+      if(hit){hit.used=true;hit.r1=r;hit.c0=Math.min(hit.c0,c0);hit.c1=Math.max(hit.c1,c1);next.push(hit);}
+      else next.push({r0:r,r1:r,c0,c1,used:true});
+    }
+    for(const b of active)if(!b.used)out.push(b);
+    active=next;active.forEach(b=>{b.used=false;});
+  }
+  return out.concat(active);
+}
+// emparelha linhas finas paralelas (paredes desenhadas só com o contorno)
+function pairThin(thin,minGap,maxGap){
+  // pares candidatos; prefere linhas de mesmo comprimento (contorno de parede) a cotas próximas
+  thin.sort((a,b)=>a.r0-b.r0);const cand=[];
+  for(let i=0;i<thin.length;i++)for(let j=i+1;j<thin.length;j++){const A=thin[i],B=thin[j],g=B.r0-A.r1-1;if(g<minGap)continue;if(g>maxGap)break;
+    const la=A.c1-A.c0+1,lb=B.c1-B.c0+1,ov=Math.min(A.c1,B.c1)-Math.max(A.c0,B.c0)+1;if(ov<.6*Math.min(la,lb))continue;cand.push({i,j,g,q:ov/Math.max(la,lb)});}
+  cand.sort((a,b)=>b.q-a.q||a.g-b.g);const used=new Set(),out=[];
+  for(const c of cand){if(used.has(c.i)||used.has(c.j))continue;used.add(c.i);used.add(c.j);const A=thin[c.i],B=thin[c.j];out.push({r0:A.r0,r1:B.r1,c0:Math.min(A.c0,B.c0),c1:Math.max(A.c1,B.c1),paired:true,ink:(A.r1-A.r0+1)+(B.r1-B.r0+1)});}
+  return out;
+}
+function detectPlan(px,mpp,opt){
+  const{w,h}=px,m=darkMask(px,opt.sens),M=v=>Math.max(1,Math.round(v/mpp));
+  const minLen=M(opt.minLen),minT=Math.max(2,M(.06)),maxT=M(.65);
+  const H=findBands((r,c)=>m[r*w+c],h,w,minLen),V=findBands((r,c)=>m[c*w+r],w,h,minLen);
+  // perfil de "tinta" ao longo da faixa: separa trechos sólidos de vãos (janelas desenhadas com linhas finas)
+  const split=(b,o)=>{const t=b.r1-b.r0+1,ink=b.ink||t,thr=.6*ink,out=[];let st=-1,miss=0;
+    for(let c=b.c0;c<=b.c1+1;c++){let k=0;if(c<=b.c1)for(let r=b.r0;r<=b.r1;r++)k+=o==='h'?m[r*w+c]:m[c*w+r];
+      if(k>=thr){if(st<0)st=c;miss=0;}else if(st>=0){if(++miss>2||c>b.c1){const e=c-miss+1;if(e-st>=Math.max(t*1.5,M(.3)))out.push({o,c:(b.r0+b.r1+1)/2,s0:st,s1:e,t});st=-1;miss=0;}}}
+    return out;};
+  const toWalls=(bands,o)=>{const thick=[],thin=[];for(const b of bands){const t=b.r1-b.r0+1;if(t>maxT)continue;(t>=minT?thick:thin).push(b);}
+    return thick.concat(pairThin(thin,Math.max(1,M(.04)),M(.45))).filter(b=>b.r1-b.r0+1<=maxT).flatMap(b=>split(b,o));};
+  let walls=toWalls(H,'h').concat(toWalls(V,'v'));
+  // remove duplicatas sobrepostas (mesma direção, mesma linha)
+  const dedupe=L=>{L.sort((a,b)=>(b.s1-b.s0)-(a.s1-a.s0));return L.filter((a,i)=>!L.slice(0,i).some(b=>b.o===a.o&&Math.abs(b.c-a.c)<Math.max(a.t,b.t)*.7&&a.s0>=b.s0-3&&a.s1<=b.s1+3));};
+  walls=dedupe(walls);
+  // encaixa extremidades no eixo da parede perpendicular
+  const tol=M(.06);
+  for(const W of walls)for(const e of['s0','s1']){let best=null,bd=Infinity;
+    for(const Q of walls){if(Q.o===W.o)continue;const d=Math.abs(W[e]-Q.c);if(d<=Q.t/2+W.t/2+tol&&W.c>=Q.s0-W.t-tol&&W.c<=Q.s1+W.t+tol&&d<bd){bd=d;best=Q;}}
+    if(best)W[e]=best.c;}
+  // vãos entre paredes alinhadas = portas/janelas
+  const openings=[];
+  if(opt.openings){
+    for(const o of['h','v']){
+      const L=walls.filter(W=>W.o===o).sort((a,b)=>a.c-b.c||a.s0-b.s0);
+      for(let i=0;i<L.length;i++){const A=L[i];if(A.dead)continue;
+        for(let j=0;j<L.length;j++){const B=L[j];if(i===j||B.dead||Math.abs(A.c-B.c)>Math.max(A.t,B.t)*.6||B.s0<A.s1)continue;
+          const g=B.s0-A.s1;if(g<M(.5)||g>M(2.6))continue;
+          if(walls.some(P=>P.o!==o&&!P.dead&&P.c>A.s1+1&&P.c<B.s0-1&&A.c>=P.s0-P.t&&A.c<=P.s1+P.t))continue;
+          let dk=0,tot=0;const t2=Math.max(A.t,B.t)/2;
+          for(let s=Math.ceil(A.s1+1);s<B.s0-1;s++)for(let c=Math.floor(A.c-t2);c<=A.c+t2;c++){const x=o==='h'?s:c,y=o==='h'?c:s;if(x<0||y<0||x>=w||y>=h)continue;tot++;dk+=m[y*w+x];}
+          const kind=tot&&dk/tot>.12?'window':'door',mid=(A.s1+B.s0)/2;
+          openings.push({c:o==='h'?P(mid,A.c):P(A.c,mid),w:g,kind});
+          A.s1=B.s1;A.t=Math.max(A.t,B.t);B.dead=true;break;}}
+    }
+    walls=dedupe(walls.filter(W=>!W.dead));
+  }
+  const res={walls:walls.map(W=>W.o==='h'?{a:P(W.s0,W.c),b:P(W.s1,W.c),t:W.t}:{a:P(W.c,W.s0),b:P(W.c,W.s1),t:W.t}),openings,rooms:[]};
+  if(opt.rooms&&walls.length)res.rooms=detectRooms(walls,w,h,mpp);
+  return res;
+}
+function detectRooms(walls,w,h,mpp){
+  const wm=new Uint8Array(w*h);
+  for(const W of walls){const t2=W.t/2+1,a0=W.s0-t2,a1=W.s1+t2,b0=W.c-t2,b1=W.c+t2;
+    const[x0,x1,y0,y1]=W.o==='h'?[a0,a1,b0,b1]:[b0,b1,a0,a1];
+    for(let y=Math.max(0,Math.floor(y0));y<Math.min(h,Math.ceil(y1));y++)for(let x=Math.max(0,Math.floor(x0));x<Math.min(w,Math.ceil(x1));x++)wm[y*w+x]=1;}
+  const lab=new Int32Array(w*h).fill(-1),info=[];let L=0;const st=[];
+  for(let i=0;i<w*h;i++){if(wm[i]||lab[i]>=0)continue;let cnt=0,border=false;st.push(i);lab[i]=L;
+    while(st.length){const j=st.pop(),x=j%w,y=(j-x)/w;cnt++;if(x===0||y===0||x===w-1||y===h-1)border=true;
+      if(x>0&&!wm[j-1]&&lab[j-1]<0){lab[j-1]=L;st.push(j-1);}if(x<w-1&&!wm[j+1]&&lab[j+1]<0){lab[j+1]=L;st.push(j+1);}
+      if(y>0&&!wm[j-w]&&lab[j-w]<0){lab[j-w]=L;st.push(j-w);}if(y<h-1&&!wm[j+w]&&lab[j+w]<0){lab[j+w]=L;st.push(j+w);}}
+    info.push({cnt,border});L++;}
+  const keep=new Set();info.forEach((r,i)=>{if(!r.border&&r.cnt*mpp*mpp>=1.5)keep.add(i);});
+  return regionPolys(lab,w,h,keep).map(pts=>({pts}));
+}
+function regionPolys(lab,w,h,keep){
+  const W1=w+1,E=new Map();
+  const add=(L,a,b)=>{let m=E.get(L);if(!m){m=new Map();E.set(L,m);}let l=m.get(a);if(!l){l=[];m.set(a,l);}l.push(b);};
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x,L=lab[i];if(!keep.has(L))continue;
+    if(y===0||lab[i-w]!==L)add(L,y*W1+x,y*W1+x+1);
+    if(x===w-1||lab[i+1]!==L)add(L,y*W1+x+1,(y+1)*W1+x+1);
+    if(y===h-1||lab[i+w]!==L)add(L,(y+1)*W1+x+1,(y+1)*W1+x);
+    if(x===0||lab[i-1]!==L)add(L,(y+1)*W1+x,y*W1+x);}
+  const out=[];
+  for(const m of E.values()){let bestLoop=[];
+    for(const s of[...m.keys()]){while(m.get(s)&&m.get(s).length){const loop=[s];let cur=m.get(s).pop(),guard=0;
+        while(cur!==s&&guard++<1e6){loop.push(cur);const l=m.get(cur);if(!l||!l.length)break;cur=l.pop();}
+        if(loop.length>bestLoop.length)bestLoop=loop;}}
+    let pts=bestLoop.map(k=>P(k%W1,Math.floor(k/W1)));
+    pts=pts.filter((p,i)=>{const a=pts[(i-1+pts.length)%pts.length],b=pts[(i+1)%pts.length];return Math.abs(crs(sub(p,a),sub(b,p)))>1e-9;});
+    pts=rdpClosed(pts,1.6);if(pts.length>=3)out.push(pts);}
+  return out;
+}
+function rdp(pts,eps){if(pts.length<3)return pts;let id=0,dm=0;const a=pts[0],b=pts[pts.length-1];for(let i=1;i<pts.length-1;i++){const d=segDist(pts[i],a,b);if(d>dm){dm=d;id=i;}}if(dm<=eps)return[a,b];return rdp(pts.slice(0,id+1),eps).slice(0,-1).concat(rdp(pts.slice(id),eps));}
+function rdpClosed(pts,eps){if(pts.length<4)return pts;let far=0,fd=0;pts.forEach((p,i)=>{const d=dist(p,pts[0]);if(d>fd){fd=d;far=i;}});const A=rdp(pts.slice(0,far+1),eps),B=rdp(pts.slice(far).concat([pts[0]]),eps);return A.slice(0,-1).concat(B.slice(0,-1));}
+
+// converte o resultado (em pixels da imagem) para objetos do projeto
+function importVector(res,o,px,opt){
+  const sx=o.w/px.w,sy=o.h/px.h,mpp=(sx+sy)/2;
+  const T=q=>{const l=P(q.x*sx*(o.flip?-1:1),(px.h-q.y)*sy);return add(o.p,rotV(l,o.rot||0));};
+  const ids=[],nw=[],s=S();
+  for(const wl of res.walls){const a=T(wl.a),b=T(wl.b);if(dist(a,b)<.3)continue;
+    const t=opt.thick>0?opt.thick:Math.round(Math.min(.6,Math.max(.08,Math.round(wl.t*mpp/.025)*.025))*1000)/1000;
+    const n=addObj({type:'wall',a,b,t,h:s.wallH});nw.push(n);ids.push(n.id);}
+  for(const op of res.openings||[]){const c=T(op.c),wd=Math.max(.5,op.w*mpp);let best=null,bd=Infinity;
+    for(const w of nw){const d=segDist(c,w.a,w.b);if(d<bd){bd=d;best=w;}}
+    if(!best||bd>best.t+.4)continue;const L=dist(best.a,best.b);if(L<wd+.05)continue;
+    const off=Math.max(wd/2,Math.min(L-wd/2,projT(c,best.a,best.b)*L));
+    const n=op.kind==='window'?addObj({type:'window',wallId:best.id,off,w:wd,sill:s.winSill,h:s.winH}):addObj({type:'door',wallId:best.id,off,w:wd,h:s.doorH,flip:false,hinge:false});ids.push(n.id);}
+  let k=1;for(const r of res.rooms||[]){const pts=r.pts.map(T);if(pts.length<3||Math.abs(polyArea(pts))<1)continue;
+    const n=addObj({type:'room',pts,name:r.name||('Ambiente '+k++)});ids.push(n.id);}
+  return ids;
+}
+function drawDetection(cvs,px,res){
+  const g=cvs.getContext('2d'),k=Math.min(cvs.width/px.w,cvs.height/px.h),ox=(cvs.width-px.w*k)/2,oy=(cvs.height-px.h*k)/2,T=q=>[ox+q.x*k,oy+q.y*k];
+  g.fillStyle='#fff';g.fillRect(0,0,cvs.width,cvs.height);g.globalAlpha=.55;g.drawImage(px.canvas,ox,oy,px.w*k,px.h*k);g.globalAlpha=1;
+  if(!res)return;
+  for(const r of res.rooms||[]){g.beginPath();r.pts.forEach((q,i)=>{const[x,y]=T(q);i?g.lineTo(x,y):g.moveTo(x,y);});g.closePath();g.fillStyle='rgba(120,90,220,.18)';g.fill();
+    if(r.name){const c=centroid(r.pts),[x,y]=T(c);g.fillStyle='#5b3cc4';g.font='11px system-ui';g.textAlign='center';g.fillText(r.name,x,y);}}
+  g.lineCap='square';for(const wl of res.walls){const[a,b]=[T(wl.a),T(wl.b)];g.strokeStyle='rgba(220,40,40,.85)';g.lineWidth=Math.max(2,wl.t*k);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}
+  for(const op of res.openings||[]){const[x,y]=T(op.c);g.fillStyle=op.kind==='window'?'#1f8fff':'#ff9800';g.beginPath();g.arc(x,y,Math.max(4,op.w*k/2),0,7);g.globalAlpha=.6;g.fill();g.globalAlpha=1;}
+}
+async function claudePlanFromImage(px,mpp){
+  const b64=px.canvas.toDataURL('image/jpeg',.9).split(',')[1];
+  const text='Imagem de '+px.w+'x'+px.h+' pixels (origem no canto superior esquerdo, x para a direita, y para baixo). Escala aproximada: '+mpp.toFixed(4)+' metros por pixel.\n'+
+    'Extraia a planta baixa desta imagem em coordenadas de PIXEL desta imagem:\n'+
+    '- "walls": paredes como eixo central {"x1","y1","x2","y2","t"} (t = espessura em pixels). Una paredes contínuas e faça os cantos se encontrarem.\n'+
+    '- "doors" e "windows": {"x","y","width"} com o centro do vão e a largura em pixels.\n'+
+    '- "rooms": {"name","points":[[x,y],...]} com o contorno interno de cada ambiente e o nome em português (Sala, Quarto, Cozinha, Banheiro, Área de serviço, Varanda...) lido da imagem ou inferido pelo tamanho e pelos móveis.\n'+
+    'Ignore cotas, textos, móveis e hachuras ao extrair paredes. Responda somente com o JSON {"walls":[],"doors":[],"windows":[],"rooms":[]}.';
+  const out=await AI.ask({system:'Você converte imagens de plantas baixas e croquis arquitetônicos em geometria vetorial precisa. Responda apenas com JSON válido, sem comentários.',
+    content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text}],effort:'high'});
+  const j=out.indexOf('{'),k=out.lastIndexOf('}');if(j<0||k<j)throw new Error('a IA não retornou um JSON reconhecível.');
+  const d=JSON.parse(out.slice(j,k+1)),N=v=>typeof v==='number'&&isFinite(v);
+  return{
+    walls:(d.walls||[]).filter(w=>[w.x1,w.y1,w.x2,w.y2].every(N)).map(w=>({a:P(w.x1,w.y1),b:P(w.x2,w.y2),t:N(w.t)&&w.t>0?w.t:Math.max(2,.15/mpp)})),
+    openings:[...(d.doors||[]).map(o=>({...o,kind:'door'})),...(d.windows||[]).map(o=>({...o,kind:'window'}))].filter(o=>N(o.x)&&N(o.y)&&N(o.width)).map(o=>({c:P(o.x,o.y),w:o.width,kind:o.kind})),
+    rooms:(d.rooms||[]).filter(r=>Array.isArray(r.points)&&r.points.length>=3).map(r=>({name:String(r.name||'').slice(0,40),pts:r.points.filter(p=>Array.isArray(p)&&N(p[0])&&N(p[1])).map(p=>P(p[0],p[1]))})).filter(r=>r.pts.length>=3),
+  };
+}
+function photoDialog(id){
+  let o=id?getObj(id):null;
+  if(!o||o.type!=='image')o=[...sel].map(getObj).find(x=>x&&x.type==='image')||doc.objects.find(x=>x.type==='image');
+  if(!o){log('Anexe primeiro uma foto ou imagem da planta (comando IM).','err');$('#fileImg').click();return;}
+  if(!getImg(o.img)){log('A imagem ainda está carregando, tente de novo.','err');return;}
+  const px=imgPixels(o,900);let res=null,method='local',timer=null;
+  const html='<div class="photoWrap"><div><canvas id="pvC" width="560" height="400" class="pvc"></canvas><div id="pvInfo" class="muted" style="margin-top:6px"></div>'+
+    '<div class="muted" style="font-size:12px;margin-top:4px">Vermelho: paredes · Laranja: portas · Azul: janelas · Roxo: ambientes</div></div>'+
+    '<div class="col" style="display:flex;flex-direction:column;gap:9px">'+
+    '<label>Largura real da imagem (m)<input id="pdW" value="'+fmt(o.w).replace(/\./g,'')+'"></label>'+
+    '<div class="muted" style="font-size:12px;margin-top:-4px">'+(o.calibrated?'✔ Escala calibrada.':'Dica: use "Calibrar escala" na imagem para ter medidas exatas.')+'</div>'+
+    '<label>Método<select id="pdM"><option value="local">Detecção local (grátis, offline)</option><option value="claude">IA Claude (mais precisa em fotos e croquis)</option></select></label>'+
+    '<label>Sensibilidade <input type="range" id="pdS" min="0" max="1" step="0.05" value="0.5"></label>'+
+    '<label>Comprimento mínimo de parede (m)<input id="pdL" value="0,6"></label>'+
+    '<label>Espessura fixa das paredes (m, 0 = automática)<input id="pdT" value="0"></label>'+
+    '<label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="pdO" checked> Detectar portas e janelas</label>'+
+    '<label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="pdR" checked> Detectar ambientes (com área)</label>'+
+    '<button type="button" id="pdAI" hidden>✨ Analisar com IA</button></div></div>';
+  const mppNow=()=>{const W=num($('#pdW').value);return(W>0?W:o.w)/px.w;};
+  const opts=()=>({sens:+$('#pdS').value,minLen:Math.max(.2,num($('#pdL').value)||.6),openings:$('#pdO').checked,rooms:$('#pdR').checked});
+  const info=()=>{$('#pvInfo').textContent=res?res.walls.length+' paredes · '+res.openings.filter(x=>x.kind==='door').length+' portas · '+res.openings.filter(x=>x.kind==='window').length+' janelas · '+res.rooms.length+' ambientes':(method==='claude'?'Clique em "Analisar com IA".':'');};
+  const run=()=>{if(method!=='local')return;try{res=detectPlan(px,mppNow(),opts());}catch(e){res=null;log('Falha na detecção: '+e.message,'err');}drawDetection($('#pvC'),px,res);info();};
+  const sched=()=>{clearTimeout(timer);timer=setTimeout(run,220);};
+  modal('Gerar desenho a partir da foto',html,[{label:'Cancelar',value:null},{label:'Criar desenho',primary:true,onClick:()=>{
+    if(!res||!res.walls.length){alert('Nenhuma parede detectada. Ajuste a sensibilidade, a largura real ou use a IA Claude.');return false;}
+    const nw=num($('#pdW').value);if(nw>0&&Math.abs(nw-o.w)>1e-6){o.h=o.h*nw/o.w;o.w=nw;}
+    const ids=importVector(res,o,px,{thick:num($('#pdT').value)||0});o.opacity=Math.min(o.opacity??1,.35);
+    sel=new Set(ids);commit();zoomExtents();
+    log('Desenho gerado a partir da foto: '+ids.length+' objetos. Confira e ajuste as medidas; a foto ficou mais transparente ao fundo.','res');return true;}}],
+    body=>{
+      run();
+      body.querySelectorAll('#pdS,#pdL,#pdO,#pdR,#pdW').forEach(e=>e.addEventListener('input',sched));
+      $('#pdM').addEventListener('change',e=>{method=e.target.value;$('#pdAI').hidden=method!=='claude';res=null;if(method==='local')run();else{drawDetection($('#pvC'),px,null);info();}});
+      $('#pdAI').addEventListener('click',async()=>{const b=$('#pdAI');b.disabled=true;b.textContent='Analisando… (pode levar até 1 min)';
+        try{res=await claudePlanFromImage(px,mppNow());drawDetection($('#pvC'),px,res);info();}
+        catch(e){$('#pvInfo').textContent='Erro: '+AI.errMsg(e);}
+        finally{b.disabled=false;b.textContent='✨ Analisar com IA';}});
+    });
+}
+
+/* =========================================================================
+   ASSISTENTE IA  (motor local de sugestões + Claude opcional)
+   ========================================================================= */
+const AI={
+  sdk:null,mod:null,
+  key(){try{return localStorage.getItem('va:apikey')||'';}catch(e){return'';}},
+  async client(){
+    const k=this.key();if(!k)throw new Error('NO_KEY');
+    if(!this.mod){this.mod=await import('https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@1.3.0/+esm');this.sdk=this.mod.default||this.mod.Anthropic;}
+    // a chave é do próprio usuário e fica só neste navegador; o app não tem servidor
+    return new this.sdk({apiKey:k,dangerouslyAllowBrowser:true});
+  },
+  async ask({system,content,effort='medium'}){
+    const c=await this.client();
+    const r=await c.beta.messages.create({model:'claude-opus-5-5',max_tokens:16000,betas:['server-side-fallback-2026-07-01'],fallbacks:'default',
+      output_config:{effort},system,messages:[{role:'user',content}]});
+    if(r.stop_reason==='refusal')throw new Error('A IA não pôde responder a este pedido'+(r.stop_details&&r.stop_details.explanation?': '+r.stop_details.explanation:'.'));
+    const txt=r.content.filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+    if(r.stop_reason==='max_tokens'&&!txt)throw new Error('resposta muito longa, tente uma pergunta mais específica.');
+    return txt;
+  },
+  errMsg(e){
+    const m=this.mod;
+    if(e&&e.message==='NO_KEY')return'configure sua chave da API Claude no Assistente IA (botão "Configurar IA").';
+    if(m){if(m.AuthenticationError&&e instanceof m.AuthenticationError)return'chave da API inválida.';
+      if(m.PermissionDeniedError&&e instanceof m.PermissionDeniedError)return'a chave não tem permissão para este modelo.';
+      if(m.RateLimitError&&e instanceof m.RateLimitError)return'limite de uso atingido, aguarde um pouco e tente de novo.';
+      if(m.APIConnectionError&&e instanceof m.APIConnectionError)return'sem conexão com a API (verifique a internet).';
+      if(m.APIError&&e instanceof m.APIError)return'erro da API ('+(e.status||'?')+').';}
+    if(e instanceof TypeError&&/import|fetch|module/i.test(e.message))return'não foi possível carregar o SDK da Claude (é preciso internet).';
+    return(e&&e.message)||String(e);
+  },
+};
+let aiSuggestions=[],aiHighlight=null;
+
+// --- utilidades de layout ---
+function rectCorners(c,w,d,rot){return rectL(-w/2,-d/2,w/2,d/2).map(q=>add(c,rotV(q,rot)));}
+function obbOverlap(A,B){for(const poly of[A,B])for(let i=0;i<4;i++){const e=sub(poly[(i+1)%4],poly[i]),ax=P(-e.y,e.x);let a0=Infinity,a1=-Infinity,b0=Infinity,b1=-Infinity;for(const p of A){const v=dot(p,ax);a0=Math.min(a0,v);a1=Math.max(a1,v);}for(const p of B){const v=dot(p,ax);b0=Math.min(b0,v);b1=Math.max(b1,v);}if(a1<=b0+1e-6||b1<=a0+1e-6)return false;}return true;}
+function polyDistToPt(poly,p){if(pointInPoly(p,poly))return 0;let d=Infinity;for(let i=0;i<poly.length;i++)d=Math.min(d,segDist(p,poly[i],poly[(i+1)%poly.length]));return d;}
+function blockFoot(b){const B=BLOCKS[b.kind]||{w:1,d:1};let w=b.w||B.w,d=b.d||B.d;if(b.kind==='mesa4'){d+=.9;}if(b.kind==='mesa_redonda'){w+=.9;d+=.9;}return rectCorners(b.p,w,d,b.rot||0);}
+function roomOpenings(room){return doc.objects.filter(o=>(o.type==='door'||o.type==='window')).map(o=>({o,g:openingGeom(o)})).filter(x=>x.g&&polyDistToPt(room.pts,x.g.c)<=x.g.t/2+.12);}
+function roomBlocks(room){return doc.objects.filter(o=>o.type==='block'&&pointInPoly(o.p,room.pts));}
+const ROOM_KIND=[[/quarto|dormit|su[ií]te/i,'quarto'],[/banh|wc|lavabo/i,'banheiro'],[/cozinha|copa/i,'cozinha'],[/servi[cç]o|lavand/i,'servico'],[/escrit|office|estudo/i,'escritorio'],[/jantar/i,'jantar'],[/sala|estar|living/i,'sala'],[/garag/i,'garagem'],[/circula|corredor|hall/i,'circulacao']];
+function roomKind(r){for(const[re,k]of ROOM_KIND)if(re.test(r.name||''))return k;return null;}
+function guessKind(r){const A=Math.abs(polyArea(r.pts)),xs=r.pts.map(p=>p.x),ys=r.pts.map(p=>p.y),bw=Math.max(...xs)-Math.min(...xs),bh=Math.max(...ys)-Math.min(...ys),mn=Math.min(bw,bh),mx=Math.max(bw,bh);
+  if(mn<1.3&&mx/mn>2.5)return['circulacao','Circulação'];if(A<3.2)return['banheiro','Lavabo'];if(A<6)return['banheiro','Banheiro'];if(A<8.5)return['escritorio','Escritório'];if(A<13)return['quarto','Quarto'];if(A<22)return['sala','Sala de estar'];return['sala','Sala / cozinha integrada'];}
+const LAYOUTS={
+  quarto:A=>[{kind:A>=9?'cama_casal':'cama_solteiro',pref:'center',far:true},{kind:'guarda_roupa',pref:'corner'}],
+  sala:A=>[{kind:'sofa',pref:'center',far:true},{kind:'poltrona',pref:'corner'},...(A>16?[{kind:'mesa4',pref:'free'}]:[])],
+  cozinha:A=>[{kind:'pia',pref:'any'},{kind:'fogao',pref:'any'},{kind:'geladeira',pref:'corner'},...(A>10?[{kind:'mesa_redonda',pref:'free'}]:[])],
+  banheiro:A=>A<3.2?[{kind:'vaso',pref:'any'},{kind:'lavatorio',pref:'any'}]:[{kind:'chuveiro',pref:'corner',far:true},{kind:'vaso',pref:'any'},{kind:'lavatorio',pref:'any'}],
+  escritorio:()=>[{kind:'escrivaninha',pref:'center'},{kind:'poltrona',pref:'corner'}],
+  jantar:()=>[{kind:'mesa4',pref:'free'}],
+  servico:()=>[{kind:'tanque',pref:'corner'},{kind:'maquina',pref:'any'}],
+  garagem:()=>[{kind:'carro',pref:'free'}],
+  circulacao:()=>[],
+};
+function layoutRoom(room,kind){
+  const A=Math.abs(polyArea(room.pts)),items=(LAYOUTS[kind]||(()=>[]))(A),pts=room.pts,sg=Math.sign(polyArea(pts))||1,n=pts.length;
+  const doors=roomOpenings(room).filter(x=>x.o.type==='door').map(x=>({c:x.g.c,r:x.o.w*1.05+.1}));
+  const obst=roomBlocks(room).map(blockFoot),placed=[];
+  const valid=foot=>{for(const q of foot)if(!pointInPoly(q,pts))return false;
+    for(let i=0;i<4;i++)for(let j=0;j<n;j++)if(segInt(foot[i],foot[(i+1)%4],pts[j],pts[(j+1)%n])){const a=foot[i],b=foot[(i+1)%4];if(segDist(pts[j],a,b)>.02&&segDist(pts[(j+1)%n],a,b)>.02)return false;}
+    for(const d of doors)if(polyDistToPt(foot,d.c)<d.r)return false;
+    for(const o of obst)if(obbOverlap(foot,o))return false;return true;};
+  const dDoor=p=>doors.length?Math.min(...doors.map(d=>dist(p,d.c))):0;
+  for(const it of items){
+    const B=BLOCKS[it.kind];if(!B)continue;let best=null,bs=Infinity;
+    const fw=B.w+(it.kind==='mesa_redonda'?.9:0),fd=B.d+(it.kind==='mesa4'||it.kind==='mesa_redonda'?.9:0);
+    if(it.pref==='free'){
+      const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),c=centroid(pts);
+      for(let x=Math.min(...xs);x<=Math.max(...xs);x+=.2)for(let y=Math.min(...ys);y<=Math.max(...ys);y+=.2)for(const rot of[0,Math.PI/2]){
+        const p=P(x,y),foot=rectCorners(p,fw+.1,fd+.1,rot);if(!valid(foot))continue;const s=dist(p,c);if(s<bs){bs=s;best={p,rot};}}
+    }else{
+      for(let i=0;i<n;i++){const a=pts[i],b=pts[(i+1)%n],L=dist(a,b);if(L<B.w+.05)continue;const u=norm(sub(b,a)),inw=mul(perp(u),sg),rot=angOf(mul(inw,-1))-Math.PI/2;
+        for(let s=B.w/2+.03;s<=L-B.w/2-.03+1e-9;s+=.1){const p=add(add(a,mul(u,s)),mul(inw,B.d/2+.03)),foot=rectCorners(p,fw,fd,rot);if(!valid(foot))continue;
+          const t=s/L;let sc=it.pref==='center'?Math.abs(t-.5)*L:it.pref==='corner'?Math.min(s-B.w/2,L-s-B.w/2):0;
+          if(it.far)sc-=dDoor(p)*1.5;else sc-=dDoor(p)*.2;if(sc<bs){bs=sc;best={p,rot};}}}
+    }
+    if(best){const o={type:'block',kind:it.kind,p:best.p,rot:best.rot,w:B.w,d:B.d};placed.push(o);obst.push(blockFoot(o));}
+  }
+  return placed;
+}
+function roomWallContacts(room){
+  const out=[],c=centroid(room.pts),rooms=doc.objects.filter(o=>o.type==='room');
+  for(const w of doc.objects){if(w.type!=='wall')continue;const{L,u,n}=wallInfo(w);if(L<.5)continue;
+    for(let i=0;i<room.pts.length;i++){const p=room.pts[i],q=room.pts[(i+1)%room.pts.length],d=norm(sub(q,p));if(Math.abs(crs(d,u))>.05)continue;
+      if(Math.abs(Math.abs(dot(sub(p,w.a),n))-w.t/2)>.12)continue;
+      const s0=Math.max(0,Math.min(dot(sub(p,w.a),u),dot(sub(q,w.a),u))),s1=Math.min(L,Math.max(dot(sub(p,w.a),u),dot(sub(q,w.a),u)));if(s1-s0<.6)continue;
+      const side=Math.sign(dot(sub(c,w.a),n))||1,probe=sub(add(w.a,mul(u,(s0+s1)/2)),mul(n,side*(w.t/2+.3)));
+      out.push({w,s0,s1,exterior:!rooms.some(r=>pointInPoly(probe,r.pts))});}}
+  return out;
+}
+// --- áreas livres do terreno (maior retângulo vazio, repetido) ---
+function freeAreas(ter){
+  const pts=ter.pts,A=Math.abs(polyArea(pts));if(A<4)return[];
+  const res=Math.max(.25,Math.sqrt(A/40000)),xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),x0=Math.min(...xs),y0=Math.min(...ys),C=Math.ceil((Math.max(...xs)-x0)/res),R=Math.ceil((Math.max(...ys)-y0)/res);
+  const occ=[];
+  for(const o of doc.objects){if(o.type==='wall')occ.push(offsetPoly(wallPoly(o),[-.4,-.4,-.4,-.4]));else if(o.type==='room')occ.push(o.pts);else if(o.type==='block'&&o.kind!=='arvore')occ.push(blockFoot(o));
+    else if(o.type==='polyline'&&o.closed)occ.push(o.pts);}
+  const occBB=occ.map(p=>{const X=p.map(q=>q.x),Y=p.map(q=>q.y);return[Math.min(...X),Math.min(...Y),Math.max(...X),Math.max(...Y)];});
+  const g=new Uint8Array(R*C);
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){const p=P(x0+(c+.5)*res,y0+(r+.5)*res);if(!pointInPoly(p,pts))continue;let free=true;
+    for(let k=0;k<occ.length&&free;k++){const b=occBB[k];if(p.x<b[0]||p.x>b[2]||p.y<b[1]||p.y>b[3])continue;if(pointInPoly(p,occ[k]))free=false;}g[r*C+c]=free?1:0;}
+  const out=[];
+  for(let it=0;it<7;it++){
+    const hgt=new Int32Array(C);let best={a:0};
+    for(let r=0;r<R;r++){for(let c=0;c<C;c++)hgt[c]=g[r*C+c]?hgt[c]+1:0;const st=[];
+      for(let c=0;c<=C;c++){const hh=c<C?hgt[c]:0;let s=c;while(st.length&&st[st.length-1][1]>=hh){const[sc,sh]=st.pop();const area=sh*(c-sc);if(area>best.a&&sh>0)best={a:area,r1:r,r0:r-sh+1,c0:sc,c1:c-1};s=sc;}st.push([s,hh]);}}
+    if(!best.a)break;const wM=(best.c1-best.c0+1)*res,hM=(best.r1-best.r0+1)*res;if(wM*hM<6||Math.min(wM,hM)<1.2)break;
+    for(let r=best.r0;r<=best.r1;r++)for(let c=best.c0;c<=best.c1;c++)g[r*C+c]=0;
+    out.push({x0:x0+best.c0*res,y0:y0+best.r0*res,x1:x0+(best.c1+1)*res,y1:y0+(best.r1+1)*res,w:wM,h:hM,area:wM*hM});
+  }
+  return out;
+}
+function analyzeProject(){
+  const S_=[],add_=s=>{s.id=uid();S_.push(s);};
+  const terrains=doc.objects.filter(o=>o.type==='terrain'),rooms=doc.objects.filter(o=>o.type==='room'),walls=doc.objects.filter(o=>o.type==='wall');
+  if(!doc.objects.length){add_({icon:'🧭',title:'Comece pelo terreno',text:'Crie o terreno pelas medidas (frente, fundos, laterais) para que eu possa sugerir a implantação e o uso dos espaços livres.',applyLabel:'Criar terreno',apply:()=>terrainDialog()});
+    add_({icon:'📷',title:'Tem uma planta em papel ou foto?',text:'Anexe a imagem e gere o desenho automaticamente (paredes, portas, janelas e ambientes).',applyLabel:'Anexar foto',apply:()=>$('#fileImg').click()});return S_;}
+  // --- terreno ---
+  for(const t of terrains){
+    const TA=Math.abs(polyArea(t.pts)),hasSb=t.setbacks&&t.setbacks.some(v=>v>0),build=hasSb?offsetPoly(t.pts,t.setbacks):t.pts;
+    const front=[t.pts[0],t.pts[1]],inside=(x,y)=>pointInPoly(P(x,y),t.pts);
+    const built=walls.some(w=>inside(w.a.x,w.a.y))||rooms.some(r=>pointInPoly(centroid(r.pts),t.pts));
+    if(!built){
+      const bb=build.map(p=>p),xs=bb.map(p=>p.x),ys=bb.map(p=>p.y),bw=Math.max(...xs)-Math.min(...xs),bh=Math.max(...ys)-Math.min(...ys),w=Math.min(bw,10),h=Math.min(bh,12);
+      const a=P(Math.min(...xs)+(bw-w)/2,Math.min(...ys)),b=P(a.x+w,a.y+h),ok=rectPts(a,b).every(p=>pointInPoly(p,build));
+      add_({icon:'🏠',title:'Terreno sem edificação',text:'Área edificável disponível: '+fmt(Math.abs(polyArea(build)))+' m². Sugestão: implantar uma casa de '+fmt(w,1)+' × '+fmt(h,1)+' m ('+fmt(w*h,1)+' m²) junto ao recuo frontal, deixando o fundo livre para quintal/lazer.',
+        area:rectPts(a,b),applyLabel:ok?'Criar paredes da casa':null,apply:ok?()=>{const p=rectPts(a,b);for(let i=0;i<4;i++)addObj({type:'wall',a:p[i],b:p[(i+1)%4],t:S().wallT,h:S().wallH});addObj({type:'room',pts:offsetPoly(p,[S().wallT/2,S().wallT/2,S().wallT/2,S().wallT/2]),name:'Casa (a dividir)'});commit();}:null});
+    }
+    const fr=freeAreas(t);let hasCar=doc.objects.some(o=>o.type==='block'&&o.kind==='carro'&&pointInPoly(o.p,t.pts)),lazer=doc.objects.some(o=>o.type==='block'&&o.kind==='piscina'&&pointInPoly(o.p,t.pts));
+    const treesIn=r=>doc.objects.some(o=>o.type==='block'&&o.kind==='arvore'&&o.p.x>=r.x0-.5&&o.p.x<=r.x1+.5&&o.p.y>=r.y0-.5&&o.p.y<=r.y1+.5);
+    let freeA=0;
+    for(const r of fr){
+      const poly=rectPts(P(r.x0,r.y0),P(r.x1,r.y1)),c=P((r.x0+r.x1)/2,(r.y0+r.y1)/2),dFront=Math.min(...poly.map(p=>segDist(p,front[0],front[1]))),inB=[...poly,c].filter(p=>pointInPoly(p,build)).length>=4,mn=Math.min(r.w,r.h),mx=Math.max(r.w,r.h);
+      freeA+=r.area;const dims=fmt(r.w,1)+' × '+fmt(r.h,1)+' m ('+fmt(r.area,1)+' m²)';
+      const fu=norm(sub(front[1],front[0])),carRot=angOf(fu);
+      if(dFront<1.5&&mn>=2.5&&mx>=5&&!hasCar){hasCar=true;
+        add_({icon:'🚗',title:'Vaga de garagem na frente',text:'Espaço livre de '+dims+' junto à frente do lote comporta uma vaga (2,50 × 5,00 m mínimo usual).',area:poly,applyLabel:'Inserir vaga',
+          apply:()=>{addObj({type:'block',kind:'carro',p:c,rot:r.w>=r.h?Math.PI/2:0,w:1.8,d:4.3});addObj({type:'text',p:add(c,P(-1,-2.6)),text:'Garagem',size:S().textSize*1.4,ang:0});commit();}});continue;}
+      if(treesIn(r))continue;
+      if(dFront<1.5){add_({icon:'🌳',title:'Jardim frontal',text:'Faixa livre de '+dims+' na frente: ideal para jardim, calçada permeável ou muro com portão. Ajuda na área permeável exigida pela prefeitura.',area:poly,applyLabel:'Inserir árvores',apply:()=>{plantTrees(r);commit();}});continue;}
+      if(dFront>4&&mn>=3&&!lazer&&r.area>=18&&built){lazer=true;const pw=Math.min(4,mn-1.5),pd=Math.min(8,mx-2);
+        add_({icon:'🏊',title:'Área de lazer',text:'Espaço livre de '+dims+'. Sugestão: piscina de '+fmt(pw,1)+' × '+fmt(pd,1)+' m com deck, ou área gourmet com churrasqueira.',area:poly,applyLabel:'Inserir piscina',
+          apply:()=>{addObj({type:'block',kind:'piscina',p:c,rot:r.w>=r.h?Math.PI/2:0,w:pw,d:pd});addObj({type:'text',p:add(c,P(-1.2,-(Math.max(r.w,r.h)/2)+.6)),text:'Área de lazer',size:S().textSize*1.4,ang:0});commit();}});continue;}
+      if(inB&&mn>=2.8&&built){const w=Math.min(r.w,4.5),h=Math.min(r.h,4.5),a=P(r.x0,r.y0),b=P(r.x0+w,r.y0+h);
+        add_({icon:'➕',title:'Espaço para ampliação',text:'Dentro dos recuos há '+dims+' livres. Cabe um cômodo de até '+fmt(w*h,1)+' m² (quarto, escritório ou edícula).',area:poly,applyLabel:'Criar cômodo',
+          apply:()=>{const p=rectPts(a,b);for(let i=0;i<4;i++)addObj({type:'wall',a:p[i],b:p[(i+1)%4],t:S().wallT,h:S().wallH});addObj({type:'room',pts:offsetPoly(p,[S().wallT/2,S().wallT/2,S().wallT/2,S().wallT/2]),name:'Ampliação'});commit();}});continue;}
+      add_({icon:'🌱',title:mn<2.5?'Corredor lateral livre':'Quintal / área verde',text:'Espaço de '+dims+(mn<2.5?': use como passagem, jardim lateral ou área de serviço (varal).':': sugestão de jardim, horta ou pomar — mantém o solo permeável.'),area:poly,applyLabel:mn>=2?'Inserir árvores':null,apply:mn>=2?()=>{plantTrees(r);commit();}:null});
+    }
+    const builtA=rooms.reduce((s,o)=>s+Math.abs(polyArea(o.pts)),0)+walls.reduce((s,w)=>s+dist(w.a,w.b)*w.t,0);
+    const sealed=doc.objects.filter(o=>o.type==='block'&&o.kind!=='arvore'&&pointInPoly(o.p,t.pts)).reduce((s_,b)=>{const f=blockFoot(b);return s_+Math.abs(polyArea(f));},0),perm=Math.max(0,TA-builtA-sealed);
+    if(built)add_({icon:'📊',title:'Índices do lote',text:'Taxa de ocupação estimada '+fmt(builtA/TA*100,1)+'% · área não construída ≈ '+fmt(perm,1)+' m² ('+fmt(perm/TA*100,1)+'% do lote), dos quais '+fmt(freeA,1)+' m² em áreas livres aproveitáveis. Muitas prefeituras exigem 10–30% de área permeável e limitam a ocupação a 50–70%: confira o código de obras local.'});
+  }
+  // --- ambientes ---
+  for(const r of rooms){
+    const A=Math.abs(polyArea(r.pts));let k=roomKind(r);
+    if(!k||/^ambiente( \d+)?$/i.test((r.name||'').trim())){const[gk,gn]=guessKind(r);
+      add_({icon:'🏷️',title:'Nomear "'+(r.name||'Ambiente')+'" ('+fmt(A,1)+' m²)',text:'Pelo tamanho e formato, este espaço funciona bem como '+gn+'.',area:r.pts,applyLabel:'Usar "'+gn+'"',apply:()=>{r.name=gn;commit();}});k=k||gk;}
+    const blocks=roomBlocks(r),ops=roomOpenings(r);
+    if(!blocks.length&&k!=='circulacao'){const lay=layoutRoom(r,k);
+      if(lay.length)add_({icon:'🛋️',title:(r.name||'Ambiente')+' está vazio',text:'Sugestão de layout: '+lay.map(o=>BLOCKS[o.kind].name).join(', ')+', posicionados junto às paredes sem bloquear portas.',area:r.pts,applyLabel:'Mobiliar',apply:()=>{layoutRoom(r,k).forEach(o=>addObj(o));commit();}});
+      else if(LAYOUTS[k]&&LAYOUTS[k](A).length)add_({icon:'📐',title:(r.name||'Ambiente')+' vazio e apertado',text:'Não encontrei espaço para o mobiliário padrão de '+k+' ('+fmt(A,1)+' m²). Considere ampliar o ambiente ou mudar o uso.',area:r.pts});}
+    if(walls.length&&!ops.some(x=>x.o.type==='door')&&k!=='circulacao')add_({icon:'🚪',title:(r.name||'Ambiente')+' sem porta',text:'Não encontrei porta neste ambiente. Use a ferramenta Porta (PO) sobre uma das paredes.',area:r.pts});
+    const need=['quarto','sala','escritorio','jantar'].includes(k)?A/6:['cozinha','banheiro','servico'].includes(k)?A/8:0;
+    const winA=ops.filter(x=>x.o.type==='window').reduce((s,x)=>s+x.o.w*(x.o.h||1.2),0);
+    if(need>0&&winA<need*.95&&walls.length){const ext=roomWallContacts(r).filter(c=>c.exterior).sort((a,b)=>(b.s1-b.s0)-(a.s1-a.s0))[0];
+      const ww=Math.max(.6,Math.min(2.5,(need-winA)/(S().winH||1.2)));
+      add_({icon:'🪟',title:'Iluminação em '+(r.name||'ambiente'),text:'Vãos de janela: '+fmt(winA,2)+' m², recomendado ≈ '+fmt(need,2)+' m² (1/'+(need===A/6?6:8)+' da área do piso, referência comum nos códigos de obras).'+(ext?'':' Não achei parede externa para a janela.'),area:r.pts,
+        applyLabel:ext&&ext.s1-ext.s0>=ww+.3?'Adicionar janela de '+fmt(ww,2)+' m':null,apply:ext&&ext.s1-ext.s0>=ww+.3?()=>{addObj({type:'window',wallId:ext.w.id,off:(ext.s0+ext.s1)/2,w:ww,sill:S().winSill,h:S().winH});commit();}:null});}
+    const MIN={quarto:8,banheiro:2.2,cozinha:4,sala:8};if(MIN[k]&&A<MIN[k])add_({icon:'⚠️',title:(r.name||'Ambiente')+' pequeno',text:fmt(A,1)+' m² está abaixo de ~'+MIN[k]+' m², mínimo usual para '+k+' em muitos códigos de obras.',area:r.pts});
+  }
+  if(!terrains.length&&walls.length)add_({icon:'📏',title:'Desenhe o terreno',text:'Com o terreno (TE) consigo calcular recuos, taxa de ocupação e sugerir usos para as áreas livres do lote.',applyLabel:'Criar terreno',apply:()=>terrainDialog()});
+  if(!rooms.length&&walls.length)add_({icon:'🧩',title:'Defina os ambientes',text:'Crie ambientes (AM) dentro das paredes para eu calcular áreas e sugerir móveis e janelas.',applyLabel:'Ferramenta Ambiente',apply:()=>startTool('room')});
+  return S_;
+}
+function plantTrees(r){const n=Math.max(1,Math.min(4,Math.floor(r.area/20))),cols=Math.max(1,Math.round(Math.sqrt(n*r.w/r.h))),rows=Math.ceil(n/cols);let k=0;
+  for(let i=0;i<rows;i++)for(let j=0;j<cols&&k<n;j++,k++){const sz=Math.min(3,r.w/cols*.9,r.h/rows*.9);addObj({type:'block',kind:'arvore',p:P(r.x0+(j+.5)*r.w/cols,r.y0+(i+.5)*r.h/rows),rot:0,w:sz,d:sz});}}
+function renderSuggestions(){
+  const el=$('#aiList');
+  if(!aiSuggestions.length){el.innerHTML='<div class="muted">Nenhuma sugestão no momento. 👍</div>';return;}
+  el.innerHTML=aiSuggestions.map(s=>'<div class="sug" data-id="'+s.id+'"><div class="sugT">'+s.icon+' '+esc(s.title)+'</div><div class="sugX">'+esc(s.text)+'</div><div class="btnrow">'+
+    (s.area?'<button type="button" data-a="show">Ver</button>':'')+(s.apply&&s.applyLabel?'<button type="button" class="primary" data-a="apply">'+esc(s.applyLabel)+'</button>':'')+'</div></div>').join('');
+  el.querySelectorAll('.sug').forEach(c=>{const s=aiSuggestions.find(x=>x.id===c.dataset.id);
+    c.addEventListener('mouseenter',()=>{aiHighlight=s.area||null;redraw();});c.addEventListener('mouseleave',()=>{aiHighlight=null;redraw();});
+    c.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+      if(b.dataset.a==='show'&&s.area){const xs=s.area.map(p=>p.x),ys=s.area.map(p=>p.y);if(mode3d)setView('2d');view.cx=(Math.min(...xs)+Math.max(...xs))/2;view.cy=(Math.min(...ys)+Math.max(...ys))/2;view.s=Math.max(.5,Math.min(5000,Math.min(W/(Math.max(...xs)-Math.min(...xs)+4),H/(Math.max(...ys)-Math.min(...ys)+4))));aiHighlight=s.area;redraw();}
+      if(b.dataset.a==='apply'){aiHighlight=null;s.apply();log('Sugestão aplicada: '+s.title,'res');runAnalysis();}}));});
+}
+function runAnalysis(){try{aiSuggestions=analyzeProject();}catch(e){aiSuggestions=[];log('Falha na análise: '+e.message,'err');}renderSuggestions();}
+function projectSummary(){
+  const r2=v=>Math.round(v*100)/100,terr=doc.objects.filter(o=>o.type==='terrain'),rooms=doc.objects.filter(o=>o.type==='room'),walls=doc.objects.filter(o=>o.type==='wall');
+  return{
+    terrenos:terr.map(t=>({nome:t.name,area_m2:r2(Math.abs(polyArea(t.pts))),lados_m:t.pts.map((p,i)=>r2(dist(p,t.pts[(i+1)%t.pts.length]))),lado_1_e_a_frente:true,recuos_m:t.setbacks,
+      area_edificavel_m2:t.setbacks&&t.setbacks.some(v=>v>0)?r2(Math.abs(polyArea(offsetPoly(t.pts,t.setbacks)))):null,
+      areas_livres:freeAreas(t).map(f=>({largura_m:r2(f.w),profundidade_m:r2(f.h),area_m2:r2(f.area),distancia_da_frente_m:r2(Math.min(...rectPts(P(f.x0,f.y0),P(f.x1,f.y1)).map(p=>segDist(p,t.pts[0],t.pts[1]))))}))})),
+    ambientes:rooms.map(ro=>{const xs=ro.pts.map(p=>p.x),ys=ro.pts.map(p=>p.y),ops=roomOpenings(ro);return{nome:ro.name,area_m2:r2(Math.abs(polyArea(ro.pts))),dimensoes_m:[r2(Math.max(...xs)-Math.min(...xs)),r2(Math.max(...ys)-Math.min(...ys))],
+      moveis:roomBlocks(ro).map(b=>BLOCKS[b.kind]?.name),portas:ops.filter(x=>x.o.type==='door').length,area_janelas_m2:r2(ops.filter(x=>x.o.type==='window').reduce((s,x)=>s+x.o.w*(x.o.h||1.2),0))};}),
+    paredes:{quantidade:walls.length,comprimento_total_m:r2(walls.reduce((s,w)=>s+dist(w.a,w.b),0))},
+    moveis_fora_de_ambientes:doc.objects.filter(o=>o.type==='block'&&!rooms.some(r=>pointInPoly(o.p,r.pts))).map(b=>BLOCKS[b.kind]?.name),
+  };
+}
+function mdLite(t){return esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^#{1,4}\s*(.+)$/gm,'<b>$1</b>').replace(/^\s*[-*]\s+/gm,'• ').replace(/\n/g,'<br>');}
+async function askClaude(q){
+  const out=$('#aiAnswer'),btn=$('#aiAsk');
+  if(!AI.key()){aiConfigDialog();return;}
+  btn.disabled=true;out.innerHTML='<span class="muted">Pensando…</span>';
+  try{
+    const sys='Você é o assistente de arquitetura do Vorticis Architecture, um programa de desenho de plantas residenciais usado no Brasil. Você recebe um resumo do projeto em JSON (medidas em metros; "areas_livres" são os maiores retângulos vazios do terreno). '+
+      'Responda em português do Brasil, de forma prática, em tópicos curtos. Ao sugerir usos para espaços vazios, cite dimensões e áreas, considere insolação, ventilação, privacidade, circulação e área permeável. '+
+      'Quando falar de índices urbanísticos ou áreas mínimas, diga que variam por município. Não invente dados que não estejam no resumo.';
+    const txt=await AI.ask({system:sys,content:'Resumo do projeto:\n```json\n'+JSON.stringify(projectSummary())+'\n```\n\nPergunta: '+(q||'Analise o projeto e sugira o que fazer nos espaços vazios (terreno e ambientes).'),effort:'medium'});
+    out.innerHTML=mdLite(txt||'(sem resposta)');
+  }catch(e){out.innerHTML='<span class="err">Erro: '+esc(AI.errMsg(e))+'</span>';}
+  finally{btn.disabled=false;}
+}
+function aiConfigDialog(){
+  const k=AI.key();
+  modal('Configurar IA (Claude)','<p style="max-width:520px">As sugestões básicas e a detecção de paredes funcionam <b>sem internet e de graça</b>. Para respostas mais completas e para ler fotos e croquis com IA, informe uma chave da API Claude (criada em console.anthropic.com).</p>'+
+    '<label class="col" style="display:flex;flex-direction:column;gap:4px">Chave da API<input id="aiKey" type="password" autocomplete="off" style="width:min(460px,80vw)" placeholder="sk-ant-..." value="'+esc(k)+'"></label>'+
+    '<p class="muted" style="max-width:520px;font-size:12px">A chave fica salva só neste navegador e é enviada diretamente para a API da Anthropic. O uso é cobrado na sua conta. Não use este recurso em computador compartilhado.</p>',
+    [{label:'Remover chave',onClick:()=>{try{localStorage.removeItem('va:apikey');}catch(e){}updateAiUI();log('Chave da IA removida.');return true;}},{label:'Cancelar',value:null},
+     {label:'Salvar',primary:true,onClick:()=>{const v=$('#aiKey').value.trim();try{if(v)localStorage.setItem('va:apikey',v);else localStorage.removeItem('va:apikey');}catch(e){alert('Não foi possível salvar a chave neste navegador.');return false;}updateAiUI();log(v?'Chave da IA salva neste navegador.':'Chave removida.','res');return true;}}]);
+}
+function updateAiUI(){const on=!!AI.key();$('#aiStatus').textContent=on?'Claude conectado':'modo local';$('#aiStatus').className='pill'+(on?' on':'');}
+function openAssistant(){openPanel();$('#aiSec').scrollIntoView({block:'start',behavior:'smooth'});runAnalysis();}
+$('#aiAnalyze').addEventListener('click',runAnalysis);
+$('#aiCfg').addEventListener('click',aiConfigDialog);
+$('#aiAsk').addEventListener('click',()=>askClaude($('#aiQ').value.trim()));
+$('#aiQ').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askClaude($('#aiQ').value.trim());}});
+Tools.photo2d=()=>{photoDialog();return null;};
+Tools.assistant=()=>{openAssistant();return null;};
+Object.assign(ALIASES,{FD:'photo2d',FOTODESENHO:'photo2d',VETORIZAR:'photo2d',IA:'assistant',ASSISTENTE:'assistant'});
+ACT.ai=openAssistant;
+
 /* ---------- inicialização ---------- */
 window.addEventListener('resize',resize);
 window.addEventListener('beforeunload',()=>{if(saveTimer){saveNow();}});
 (async function init(){
-  buildToolbar();updateToggles();
+  buildToolbar();updateToggles();updateAiUI();
   await store.init();
   resize();
   let loaded=false;
