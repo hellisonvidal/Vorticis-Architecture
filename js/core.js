@@ -36,6 +36,10 @@ function rectCorners(c,w,d,rot){return[P(-w/2,-d/2),P(w/2,-d/2),P(w/2,d/2),P(-w/
 const cp=p=>P(p.x,p.y);
 
 /* ---------- documento ---------- */
+const APP_VERSION='1.0.0';
+// edição para Windows (Tauri): a página roda dentro do programa e conversa com o Rust
+const DESKTOP=!!(window.__TAURI__&&window.__TAURI__.core&&window.__TAURI__.core.invoke);
+const tauriInvoke=(cmd,args)=>window.__TAURI__.core.invoke(cmd,args);
 const DEFAULT_LAYERS=[
   {id:'geral',name:'Geral',color:'auto'},
   {id:'paredes',name:'Paredes',color:'auto'},

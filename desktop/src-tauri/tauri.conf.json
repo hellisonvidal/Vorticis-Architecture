@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Vorticis Architecture",
+  "version": "1.0.0",
+  "identifier": "br.com.vorticis.architecture",
+  "build": {
+    "beforeBuildCommand": "node prepare.mjs",
+    "beforeDevCommand": "node prepare.mjs",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      { "title": "Vorticis Architecture", "width": 1440, "height": 900, "minWidth": 900, "minHeight": 600, "maximized": true, "dragDropEnabled": false }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "publisher": "Vorticis",
+    "shortDescription": "CAD arquitetônico",
+    "longDescription": "Plantas, paredes, portas, janelas, telhados, terreno, 3D e arquivos DWG, DXF, PDF e IFC.",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "windows": {
+      "nsis": { "languages": ["PortugueseBR"], "displayLanguageSelector": false },
+      "wix": { "language": "pt-BR" }
+    }
+  }
+}

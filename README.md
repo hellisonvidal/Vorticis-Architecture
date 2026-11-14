@@ -13,6 +13,15 @@ Não precisa de instalação nem de servidor. Funciona offline e pode ser instal
 - **Instalar como app:** abra o endereço publicado no Chrome ou Edge e clique em *Instalar* (ícone na barra de endereço).
 - **Sem internet:** todas as bibliotecas estão no próprio repositório (pasta `vendor/`). Depois do primeiro acesso pelo link, o app, o 3D e os leitores de DWG e PDF funcionam totalmente offline.
 
+## Versões e downloads
+
+As versões ficam na página **Releases** do repositório (veja o [histórico de mudanças](CHANGELOG.md)). Cada versão traz:
+
+- **`Vorticis.Architecture_x.y.z_x64-setup.exe`** (ou `.msi`): o **programa para Windows**. Basta instalar. Ele funciona sem navegador e sem internet, salva arquivos pela janela "Salvar como" do Windows e **grava DWG** quando o [ODA File Converter](https://www.opendesign.com/guestfiles/oda_file_converter), que é gratuito, está instalado. Sem ele, exporte DXF.
+- **`Vorticis-Architecture-vx.y.z-web.zip`**: o app web, para publicar em qualquer servidor.
+
+Para publicar uma nova versão: atualize a versão em `js/core.js` (`APP_VERSION`), `desktop/src-tauri/tauri.conf.json` e `desktop/src-tauri/Cargo.toml`, escreva a seção no `CHANGELOG.md` e envie uma tag (`git tag v1.1.0 && git push origin v1.1.0`). O GitHub Actions monta o instalador do Windows e cria a release sozinho.
+
 ## Interface
 
 | Aba | Ferramentas |
@@ -54,7 +63,7 @@ A **barra de opções** abaixo da faixa mostra as opções da ferramenta ativa, 
 
 | Formato | Importar | Exportar |
 |---|---|---|
-| **DWG** (AutoCAD) e **BAK** | ✔ leitura no navegador (LibreDWG em WebAssembly, incluído no app) | Via DXF (veja abaixo) |
+| **DWG** (AutoCAD) e **BAK** | ✔ leitura no navegador (LibreDWG em WebAssembly, incluído no app) | ✔ no programa para Windows (via ODA File Converter, gratuito); no navegador, via DXF |
 | **DXF** | ✔ linhas, polilinhas com arcos, círculos, arcos, elipses, splines, textos, MTEXT, blocos e cotas, com camadas, cores e unidades | ✔ DXF R12, compatível com AutoCAD, BricsCAD, LibreCAD e SketchUp |
 | **PDF** | ✔ vetorial (linhas e textos, na escala escolhida) ou como imagem para decalcar | ✔ **prancha vetorial** A4–A0, com escala real (1:50, 1:100…), carimbo, barra de escala, colorida ou em preto e branco |
 | **IFC** (BIM) | — | ✔ IFC4 com paredes e aberturas reais, portas, janelas, ambientes, telhado, escada e móveis, para Revit, ArchiCAD e BIMcollab |
@@ -66,7 +75,7 @@ A **barra de opções** abaixo da faixa mostra as opções da ferramenta ativa, 
 
 Você pode **arrastar e soltar** qualquer arquivo na área de desenho.
 
-**DWG e DWF:** são formatos fechados. O navegador consegue **ler** DWG, mas não **gravar**. Para levar o projeto ao AutoCAD, exporte em **DXF**: o AutoCAD, o BricsCAD e o ZWCAD abrem o arquivo e salvam como DWG em um clique. Para converter vários arquivos de uma vez, use o ODA File Converter (gratuito). O DWF clássico (W2D) não é lido, mas o DWFx é. O PDF em prancha substitui o DWF para enviar a clientes.
+**DWG e DWF:** são formatos fechados. O navegador consegue **ler** DWG, mas não **gravar**. O **programa para Windows** grava DWG (versões R9 a 2018) usando o ODA File Converter. Para levar o projeto ao AutoCAD, exporte em **DXF**: o AutoCAD, o BricsCAD e o ZWCAD abrem o arquivo e salvam como DWG em um clique. Para converter vários arquivos de uma vez, use o ODA File Converter (gratuito). O DWF clássico (W2D) não é lido, mas o DWFx é. O PDF em prancha substitui o DWF para enviar a clientes.
 
 ## Conversão automática para edição
 
@@ -107,6 +116,8 @@ js/import.js            DWG, DXF, PDF, SVG, DWFx, imagens
 js/export.js            DXF, PDF, IFC, OBJ, SVG, PNG
 js/view3d.js            modelo 3D e WebGL; view3d-fallback.js = 3D simplificado
 vendor/                 bibliotecas de terceiros (three.js, pdf.js, LibreDWG) — veja vendor/LEIA-ME.md
+desktop/                programa para Windows (Tauri): src-tauri/ (Rust), prepare.mjs
+.github/workflows/      release.yml: gera o instalador do Windows e a release ao enviar uma tag
 icon.svg, icons/        ícone (variação do Vorticis Monitor em verde e laranja)
 tools/gerar_icone.py    gerador do ícone
 ```

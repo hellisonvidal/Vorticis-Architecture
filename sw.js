@@ -1,7 +1,7 @@
 // Service worker: uso offline e instalação como aplicativo (PWA).
 // O app e as bibliotecas (pasta vendor/: 3D, PDF e DWG) ficam guardados no navegador
 // depois do primeiro acesso, então tudo funciona sem internet.
-const CACHE = 'vorticis-arch-v3';
+const CACHE = 'vorticis-arch-1.0.0'; // mude junto com APP_VERSION a cada versão
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icons/icon-192.png', './icons/icon-512.png',
   './css/app.css', './js/core.js', './js/tools.js', './js/elements.js', './js/smart.js', './js/convert.js', './js/ui.js', './js/photo.js',
   './js/io.js', './js/import.js', './js/export.js', './js/view3d-fallback.js', './js/view3d.js', './js/app.js'];

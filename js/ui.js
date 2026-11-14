@@ -43,7 +43,7 @@ const RIBBON=[
   {id:'arquivo',label:'Arquivo',file:true,groups:[
     ['Projeto',[['act:new','Novo','new'],['act:projects','Abrir projeto','open'],['act:save','Salvar','save'],['act:saveas','Salvar como','saveas']]],
     ['Importar',[['act:import','Abrir arquivo','import','DWG, BAK, DXF, PDF, SVG, DWFx, imagem ou projeto JSON'],['act:convert','Converter desenho','wallsfrom','Transforma linhas em paredes, portas, janelas e ambientes editáveis'],['tool:image','Imagem / foto','image']]],
-    ['Exportar',[['act:dxf','DXF','dxf','DXF para AutoCAD, BricsCAD, LibreCAD, SketchUp (abre e salva como DWG)'],['act:pdf','PDF','pdf','Prancha em PDF vetorial com escala e carimbo'],['act:ifc','IFC','ifc','Modelo BIM IFC para Revit, ArchiCAD, BIMx'],['act:obj','OBJ 3D','obj','Modelo 3D para SketchUp, Blender, Lumion'],['act:dwg','DWG / DWF','dxf','Como levar o projeto ao AutoCAD (DWG) e substituir o DWF'],['act:svg','SVG','svg'],['act:png','PNG','png'],['act:json','Backup','json','Backup completo do projeto']]],
+    ['Exportar',[['act:dxf','DXF','dxf','DXF para AutoCAD, BricsCAD, LibreCAD, SketchUp (abre e salva como DWG)'],['act:pdf','PDF','pdf','Prancha em PDF vetorial com escala e carimbo'],['act:ifc','IFC','ifc','Modelo BIM IFC para Revit, ArchiCAD, BIMx'],['act:obj','OBJ 3D','obj','Modelo 3D para SketchUp, Blender, Lumion'],['act:dwg','DWG','dxf','DWG para AutoCAD (no programa para Windows, com o ODA File Converter gratuito)'],['act:svg','SVG','svg'],['act:png','PNG','png'],['act:json','Backup','json','Backup completo do projeto']]],
     ['Saída',[['act:print','Imprimir','print']]]]},
   {id:'inicio',label:'Início',groups:[
     ['Seleção',[['tool:select','Selecionar','select','Selecionar (Esc)'],['tool:pan','Mão','pan','Mover a vista (botão do meio)']]],
@@ -75,7 +75,7 @@ const RIBBON=[
     ['Vista',[['act:view2d','Planta 2D','view2d'],['act:view3d','Vista 3D','view3d']]],
     ['Navegar',[['act:extents','Enquadrar','extents','Z'],['act:zoomin','Aproximar','zoomin'],['act:zoomout','Afastar','zoomout']]],
     ['Aparência',[['act:theme','Tema','theme','Claro / escuro'],['act:grid','Grade','grid','F7'],['act:panel','Painel','panel']]],
-    ['Sistema',[['act:settings','Configurações','settings'],['act:help','Ajuda','help']]]]},
+    ['Sistema',[['act:settings','Configurações','settings'],['act:help','Ajuda','help'],['act:about','Sobre','help']]]]},
 ];
 let ribbonTab=(()=>{try{return localStorage.getItem('va:ribbon')||'arq';}catch(e){return'arq';}})();
 function buildRibbon(){
@@ -342,5 +342,12 @@ const ACT={new:()=>newProject(),projects:()=>projectsDialog(),save:()=>saveNow(t
   view2d:()=>setView('2d'),view3d:()=>setView('3d'),theme:()=>toggleTheme(),grid:()=>toggle('grid'),panel:()=>togglePanel(),
   autoroof:()=>autoRoof(),autodim:()=>autoDimension(),wallsfrom:()=>wallsFromSelection(),explode:()=>explodeSel(),array:()=>arrayDialog(),
   photo2d:()=>{if(mode3d)setView('2d');photoDialog();},calibrate:()=>{const o=selectedImage();if(!o){log('Anexe uma imagem primeiro (IM).','err');return;}if(mode3d)setView('2d');startTool('calibrate',o.id);},
-  zoomin:()=>mode3d?zoom3D(1/1.25):zoomAt(P(W/2,H/2),1.25),zoomout:()=>mode3d?zoom3D(1.25):zoomAt(P(W/2,H/2),1/1.25),extents:()=>zoomExtents(),dwg:()=>dwgInfo(),convert:()=>convertDialog()};
+  zoomin:()=>mode3d?zoom3D(1/1.25):zoomAt(P(W/2,H/2),1.25),zoomout:()=>mode3d?zoom3D(1.25):zoomAt(P(W/2,H/2),1/1.25),extents:()=>zoomExtents(),dwg:()=>exportDWG(),about:()=>aboutDialog(),convert:()=>convertDialog()};
 $$('[data-act]').forEach(b=>b.addEventListener('click',()=>ACT[b.dataset.act]()));
+
+function aboutDialog(){
+  modal('Sobre o Vorticis Architecture','<div style="display:flex;gap:16px;align-items:center"><img src="icons/icon-192.png" width="72" height="72" alt=""><div><div style="font-size:18px;font-weight:700">Vorticis Architecture</div>'+
+    '<div>Versão <b>'+APP_VERSION+'</b> · '+(DESKTOP?'programa para Windows':'edição web (navegador)')+'</div><div class="muted" style="font-size:12px">CAD arquitetônico: planta, 3D e arquivos DWG, DXF, PDF, IFC</div></div></div>'+
+    '<p class="muted" style="font-size:12px;margin-top:14px">Bibliotecas incluídas: three.js (MIT), pdf.js (Apache-2.0) e leitor de DWG baseado no LibreDWG (GPL-3.0). Exportação DWG pelo ODA File Converter (programa separado, gratuito).</p>'+
+    '<p style="font-size:12px">github.com/hellisonvidal/Vorticis-Architecture</p>',[{label:'Fechar',primary:true}]);
+}

@@ -1,6 +1,8 @@
 'use strict';
 /* ---------- exportação ---------- */
-function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name.replace(/[\\/:*?"<>|]+/g,'_');document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
+function blobToB64(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=()=>rej(r.error);r.readAsDataURL(blob);});}
+async function saveDesktop(name,blob){try{const p=await tauriInvoke('save_file',{name:name.replace(/[\\/:*?"<>|]+/g,'_'),dataB64:await blobToB64(blob)});if(p)log('Arquivo salvo em '+p,'res');}catch(e){log('Falha ao salvar: '+e,'err');}}
+function download(name,blob){if(DESKTOP){saveDesktop(name,blob);return;}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name.replace(/[\\/:*?"<>|]+/g,'_');document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
 
 /* ---------- armazenamento (IndexedDB com fallback) ---------- */
 const store={db:null,

@@ -29,7 +29,7 @@ function exportSVG(){
   for(const o of objs){if(ORDER[o.type]>5){const L=getLayer(o.layer).color;prims(o).forEach(pr=>out.push(prim(pr,L)));}}
   out.push('</g></svg>');download(doc.name+'.svg',new Blob([out.join('\n')],{type:'image/svg+xml'}));log('SVG exportado.','res');
 }
-function exportDXF(){
+function dxfText(){
   if(!doc.objects.length)return log('Nada para exportar.','err');
   const ACI=[[1,255,0,0],[2,255,255,0],[3,0,255,0],[4,0,255,255],[5,0,0,255],[6,255,0,255],[7,255,255,255],[8,128,128,128],[9,192,192,192],[30,255,127,0],[40,255,191,0],[150,0,127,255],[200,191,127,255]];
   const aci=hex=>{if(!hex||hex==='auto')return 7;const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);let best=7,bd=Infinity;ACI.forEach(([i,R,G,B])=>{const d=(r-R)**2+(g-G)**2+(b-B)**2;if(d<bd){bd=d;best=i;}});return best;};
@@ -50,7 +50,7 @@ function exportDXF(){
       else if(pr.k==='text'){const lines=String(pr.text).split('\n'),n=lines.length,lh=pr.size*1.2;lines.forEach((t,i)=>{const dy=pr.base==='middle'?-(i-(n-1)/2)*lh:(n-1-i)*lh;const p=add(pr.p,rotV(P(0,dy),pr.ang||0));w(0,'TEXT');w(8,L);w(10,p.x);w(20,p.y);w(30,0);w(40,pr.size);w(1,ascii(t));w(50,(pr.ang||0)*R2D);if(pr.align==='center'||pr.base==='middle'){w(72,pr.align==='center'?1:0);w(11,p.x);w(21,p.y);w(31,0);w(73,pr.base==='middle'?2:1);}});}
     }}
   w(0,'ENDSEC');w(0,'EOF');
-  download(doc.name+'.dxf',new Blob([o.join('\r\n')+'\r\n'],{type:'application/dxf'}));log('DXF exportado (abre no AutoCAD, LibreCAD, DraftSight etc.).','res');
+  return o.join('\r\n')+'\r\n';
 }
 function exportJSON(){prune();download(doc.name+'.vorticis.json',new Blob([JSON.stringify(doc)],{type:'application/json'}));log('Backup JSON exportado.','res');}
 function printPlan(){const r=renderToCanvas(2400);if(!r)return log('Nada para imprimir.','err');const pa=$('#printArea');pa.innerHTML='<h2 style="font:600 16pt Arial;margin:0 0 4mm">'+esc(doc.name)+'</h2><img alt="Planta"><p style="font:9pt Arial">Vorticis Architecture · '+new Date().toLocaleDateString('pt-BR')+' · unidades em metros</p>';const img=pa.querySelector('img');img.onload=()=>setTimeout(()=>window.print(),50);img.src=r.c.toDataURL('image/png');}
@@ -242,4 +242,16 @@ function dwgInfo(){
     '<p>Para levar o projeto ao AutoCAD use <b>DXF</b>: o AutoCAD, BricsCAD, ZWCAD e DraftSight abrem o DXF e salvam como DWG em um clique (Arquivo → Salvar como → DWG). Para converter vários arquivos de uma vez, o <b>ODA File Converter</b> (gratuito) transforma DXF em DWG.</p>'+
     '<p>Para visualização e envio a clientes, use o <b>PDF</b> em prancha, que substitui o DWF.</p>',
     [{label:'Fechar',value:null},{label:'Exportar PDF',onClick:()=>{setTimeout(pdfDialog,0);return true;}},{label:'Exportar DXF',primary:true,onClick:()=>{exportDXF();return true;}}]);
+}
+
+function exportDXF(){const t=dxfText();if(!t)return;download(doc.name+'.dxf',new Blob([t],{type:'application/dxf'}));log('DXF exportado (abre no AutoCAD, LibreCAD, DraftSight etc.).','res');}
+// DWG: no programa para Windows, converte o DXF com o ODA File Converter (gratuito) instalado no computador
+async function exportDWG(){
+  if(!DESKTOP)return dwgInfo();
+  const t=dxfText();if(!t)return;
+  const ver=(()=>{try{return localStorage.getItem('va:dwgver')||'ACAD2018';}catch(e){return'ACAD2018';}})();
+  try{const p=await tauriInvoke('export_dwg',{name:doc.name.replace(/[\\/:*?"<>|]+/g,'_')+'.dwg',dxf:t,version:ver});if(p)log('DWG salvo em '+p+' ('+ver+').','res');}
+  catch(e){const m=String(e);
+    if(m.includes('ODA_NOT_FOUND'))modal('Instalar o conversor de DWG','<p>Para gravar DWG, o Vorticis usa o <b>ODA File Converter</b>, gratuito, da Open Design Alliance.</p><ol><li>Baixe em <b>opendesign.com/guestfiles/oda_file_converter</b> (versão para Windows).</li><li>Instale normalmente (fica em <span class="kbd">C:\\Program Files\\ODA</span>).</li><li>Volte aqui e exporte de novo.</li></ol><p class="muted">Enquanto isso, você pode exportar DXF: o AutoCAD abre e salva como DWG.</p>',[{label:'Exportar DXF',onClick:()=>{exportDXF();return true;}},{label:'OK',primary:true}]);
+    else log('Falha ao gerar DWG: '+m,'err');}
 }
