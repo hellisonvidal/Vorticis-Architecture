@@ -1,14 +1,16 @@
 {
   "name": "Vorticis Architecture",
   "short_name": "Vorticis Arch",
-  "description": "CAD arquitetônico no navegador: plantas, paredes, portas, janelas, terreno, fotos e 3D.",
+  "description": "CAD arquitetônico no navegador: plantas, paredes, portas, janelas, telhados, terreno, 3D e arquivos DWG/DXF/PDF/IFC.",
   "lang": "pt-BR",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#15191e",
-  "theme_color": "#1b2026",
+  "background_color": "#0c1210",
+  "theme_color": "#0f1512",
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
