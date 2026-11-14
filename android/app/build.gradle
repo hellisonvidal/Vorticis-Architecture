@@ -1,0 +1,51 @@
+// App Android do Vorticis Architecture: o mesmo app web (raiz do repositório) dentro de um WebView.
+plugins { id 'com.android.application' }
+
+// versão lida de js/core.js (APP_VERSION), para o app acompanhar o número da versão web
+def appVersion = (rootProject.file('../js/core.js').text =~ /APP_VERSION='([0-9.]+)'/)[0][1]
+def (vMaj, vMin, vPat) = appVersion.tokenize('.').collect { it as int }
+
+android {
+    namespace 'br.com.vorticis.architecture'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'br.com.vorticis.architecture'
+        minSdk 24
+        targetSdk 35
+        versionCode vMaj * 10000 + vMin * 100 + vPat
+        versionName appVersion
+    }
+    signingConfigs {
+        // assinatura definitiva: segredos do GitHub (ANDROID_KEYSTORE_B64 etc.), veja o README
+        release {
+            def ks = System.getenv('ANDROID_KEYSTORE_FILE')
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig System.getenv('ANDROID_KEYSTORE_FILE') ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    sourceSets { main { assets.srcDirs += ["$buildDir/web"] } }
+    androidResources { noCompress += ['wasm'] }
+}
+
+// copia o app web para os assets (www/) antes de compilar
+def copyWeb = tasks.register('copyWeb', Copy) {
+    from(rootProject.file('..')) {
+        include 'index.html', 'manifest.webmanifest', 'icon.svg', 'icons/**', 'css/**', 'js/**', 'vendor/**'
+    }
+    into "$buildDir/web/www"
+}
+tasks.named('preBuild') { dependsOn copyWeb }

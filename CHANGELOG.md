@@ -9,6 +9,7 @@ Primeira versão publicada.
 ### Como usar
 - **No navegador:** pelo link do GitHub Pages. Depois do primeiro acesso, funciona sem internet e pode ser instalado como aplicativo (botão *Instalar* do Chrome/Edge).
 - **No Windows:** baixe o instalador `.exe` (ou `.msi`) desta página e instale. O programa salva arquivos com a janela "Salvar como" do Windows e grava **DWG** quando o ODA File Converter (gratuito) está instalado.
+- **No Android:** baixe o `-android.apk` desta página no celular e instale (Android 7 ou mais novo). Abre desenhos pelo "Abrir com" e "Compartilhar" e salva onde você escolher.
 - **App web compactado:** o arquivo `-web.zip` pode ser publicado em qualquer servidor.
 
 ### Desenho e arquitetura
@@ -34,6 +35,10 @@ Primeira versão publicada.
 
 ### 3D
 - Vista 3D em WebGL com luz, sombras, materiais, esquadrias com vidro, telhado e móveis; modo simplificado quando não há WebGL.
+
+### Celular e tablet
+- Botões de toque **Concluir**, **Cancelar** e **Apagar** (Enter, Esc e Delete), botões maiores e zoom com dois dedos.
+- App para Android com ícone adaptável, botão Voltar que fecha janelas e ferramentas, e salvamento automático ao sair.
 
 ### Funcionamento offline
 - Bibliotecas incluídas no próprio app (pasta `vendor/`), sem depender de internet.

@@ -39,6 +39,9 @@ const cp=p=>P(p.x,p.y);
 const APP_VERSION='1.0.0';
 // edição para Windows (Tauri): a página roda dentro do programa e conversa com o Rust
 const DESKTOP=!!(window.__TAURI__&&window.__TAURI__.core&&window.__TAURI__.core.invoke);
+// edição para Android: a página roda dentro do app e usa a ponte VorticisAndroid (Java)
+const ANDROID=!!window.VorticisAndroid;
+const PLATFORM=DESKTOP?'Windows':ANDROID?'Android':'';
 const tauriInvoke=(cmd,args)=>window.__TAURI__.core.invoke(cmd,args);
 const DEFAULT_LAYERS=[
   {id:'geral',name:'Geral',color:'auto'},

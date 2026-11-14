@@ -18,9 +18,14 @@ Não precisa de instalação nem de servidor. Funciona offline e pode ser instal
 As versões ficam na página **Releases** do repositório (veja o [histórico de mudanças](CHANGELOG.md)). Cada versão traz:
 
 - **`Vorticis.Architecture_x.y.z_x64-setup.exe`** (ou `.msi`): o **programa para Windows**. Basta instalar. Ele funciona sem navegador e sem internet, salva arquivos pela janela "Salvar como" do Windows e **grava DWG** quando o [ODA File Converter](https://www.opendesign.com/guestfiles/oda_file_converter), que é gratuito, está instalado. Sem ele, exporte DXF.
+- **`Vorticis-Architecture-vx.y.z-android.apk`**: o **app para Android** (Android 7 ou mais novo). Abra o arquivo no celular e permita "instalar apps desta fonte". Funciona sem internet, abre desenhos pelo "Abrir com" e "Compartilhar" (gerenciador de arquivos, e-mail, WhatsApp) e salva onde você escolher. Na tela, os botões **Concluir**, **Cancelar** e **Apagar** fazem o papel de Enter, Esc e Delete; dois dedos movem e dão zoom.
 - **`Vorticis-Architecture-vx.y.z-web.zip`**: o app web, para publicar em qualquer servidor.
 
-Para publicar uma nova versão: atualize a versão em `js/core.js` (`APP_VERSION`), `desktop/src-tauri/tauri.conf.json` e `desktop/src-tauri/Cargo.toml`, escreva a seção no `CHANGELOG.md` e envie uma tag (`git tag v1.1.0 && git push origin v1.1.0`). O GitHub Actions monta o instalador do Windows e cria a release sozinho.
+**Sem esperar uma versão:** a cada envio para a `main`, o fluxo *Build* do GitHub Actions gera o instalador do Windows e o APK. Abra *Actions → Build →* a execução mais recente e baixe em *Artifacts*.
+
+**Assinatura do APK:** sem configuração, o APK sai assinado com uma chave de teste que muda a cada compilação; para atualizar o app, é preciso desinstalar a versão anterior. Para atualizações diretas (e para a Play Store), crie uma chave uma única vez (`keytool -genkeypair -v -keystore vorticis.jks -alias vorticis -keyalg RSA -keysize 2048 -validity 10000`) e cadastre em *Settings → Secrets and variables → Actions*: `ANDROID_KEYSTORE_B64` (o arquivo em base64), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD`. Guarde a chave: sem ela não dá para publicar atualizações.
+
+Para publicar uma nova versão: atualize a versão em `js/core.js` (`APP_VERSION`), `desktop/src-tauri/tauri.conf.json` e `desktop/src-tauri/Cargo.toml`, escreva a seção no `CHANGELOG.md` e envie uma tag (`git tag v1.1.0 && git push origin v1.1.0`). O GitHub Actions monta o instalador do Windows e o APK do Android e cria a release sozinho.
 
 ## Interface
 
@@ -117,7 +122,8 @@ js/export.js            DXF, PDF, IFC, OBJ, SVG, PNG
 js/view3d.js            modelo 3D e WebGL; view3d-fallback.js = 3D simplificado
 vendor/                 bibliotecas de terceiros (three.js, pdf.js, LibreDWG) — veja vendor/LEIA-ME.md
 desktop/                programa para Windows (Tauri): src-tauri/ (Rust), prepare.mjs
-.github/workflows/      release.yml: gera o instalador do Windows e a release ao enviar uma tag
+android/                app para Android (Gradle): WebView com o app web, abrir/salvar arquivos
+.github/workflows/      build.yml: instalador e APK a cada envio; release.yml: anexa tudo à release
 icon.svg, icons/        ícone (variação do Vorticis Monitor em verde e laranja)
 tools/gerar_icone.py    gerador do ícone
 ```

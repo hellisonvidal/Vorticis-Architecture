@@ -342,12 +342,13 @@ const ACT={new:()=>newProject(),projects:()=>projectsDialog(),save:()=>saveNow(t
   view2d:()=>setView('2d'),view3d:()=>setView('3d'),theme:()=>toggleTheme(),grid:()=>toggle('grid'),panel:()=>togglePanel(),
   autoroof:()=>autoRoof(),autodim:()=>autoDimension(),wallsfrom:()=>wallsFromSelection(),explode:()=>explodeSel(),array:()=>arrayDialog(),
   photo2d:()=>{if(mode3d)setView('2d');photoDialog();},calibrate:()=>{const o=selectedImage();if(!o){log('Anexe uma imagem primeiro (IM).','err');return;}if(mode3d)setView('2d');startTool('calibrate',o.id);},
-  zoomin:()=>mode3d?zoom3D(1/1.25):zoomAt(P(W/2,H/2),1.25),zoomout:()=>mode3d?zoom3D(1.25):zoomAt(P(W/2,H/2),1/1.25),extents:()=>zoomExtents(),dwg:()=>exportDWG(),about:()=>aboutDialog(),convert:()=>convertDialog()};
+  zoomin:()=>mode3d?zoom3D(1/1.25):zoomAt(P(W/2,H/2),1.25),zoomout:()=>mode3d?zoom3D(1.25):zoomAt(P(W/2,H/2),1/1.25),extents:()=>zoomExtents(),dwg:()=>exportDWG(),about:()=>aboutDialog(),convert:()=>convertDialog(),
+  enter:()=>handleCmd(''),esc:()=>cancelAction(),erase:()=>eraseSel()};
 $$('[data-act]').forEach(b=>b.addEventListener('click',()=>ACT[b.dataset.act]()));
 
 function aboutDialog(){
   modal('Sobre o Vorticis Architecture','<div style="display:flex;gap:16px;align-items:center"><img src="icons/icon-192.png" width="72" height="72" alt=""><div><div style="font-size:18px;font-weight:700">Vorticis Architecture</div>'+
-    '<div>Versão <b>'+APP_VERSION+'</b> · '+(DESKTOP?'programa para Windows':'edição web (navegador)')+'</div><div class="muted" style="font-size:12px">CAD arquitetônico: planta, 3D e arquivos DWG, DXF, PDF, IFC</div></div></div>'+
+    '<div>Versão <b>'+APP_VERSION+'</b> · '+(DESKTOP?'programa para Windows':ANDROID?'app para Android':'edição web (navegador)')+'</div><div class="muted" style="font-size:12px">CAD arquitetônico: planta, 3D e arquivos DWG, DXF, PDF, IFC</div></div></div>'+
     '<p class="muted" style="font-size:12px;margin-top:14px">Bibliotecas incluídas: three.js (MIT), pdf.js (Apache-2.0) e leitor de DWG baseado no LibreDWG (GPL-3.0). Exportação DWG pelo ODA File Converter (programa separado, gratuito).</p>'+
     '<p style="font-size:12px">github.com/hellisonvidal/Vorticis-Architecture</p>',[{label:'Fechar',primary:true}]);
 }

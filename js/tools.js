@@ -250,6 +250,7 @@ function zoomExtents(){if(mode3d){fit3DView('iso');return;}const b=docBBox();if(
 /* ---------- teclado ---------- */
 const cmdEl=$('#cmd');
 cmdEl.addEventListener('keydown',e=>{if(e.key==='Enter'||(e.key===' '&&!cmdEl.value.trim()&&!/\d/.test(cmdEl.value))){e.preventDefault();const v=cmdEl.value;cmdEl.value='';handleCmd(v);}});
+function cancelAction(){cmdEl.value='';pendingCmd=null;measureOverlay=null;if(tool)endTool();else{sel.clear();buildProps();}if(drag&&drag.type!=='pan'){drag=null;}redraw();}
 document.addEventListener('keydown',e=>{
   if($('#dlg').open)return;
   const tg=e.target,tag=tg.tagName,isCmd=tg===cmdEl;
@@ -269,7 +270,7 @@ document.addEventListener('keydown',e=>{
   if(k==='F8'){e.preventDefault();toggle('ortho');return;}
   if(k==='F9'){e.preventDefault();toggle('snap');return;}
   if(k==='F10'){e.preventDefault();toggle('polar');return;}
-  if(k==='Escape'){cmdEl.value='';pendingCmd=null;measureOverlay=null;if(tool)endTool();else{sel.clear();buildProps();}if(drag&&drag.type!=='pan'){drag=null;}redraw();return;}
+  if(k==='Escape'){cancelAction();return;}
   if(isCmd&&cmdEl.value)return;
   if(!isCmd&&(k==='Delete'||k==='Backspace')&&!tool){e.preventDefault();eraseSel();return;}
   if(!isCmd&&(k==='Enter'||k===' ')){e.preventDefault();handleCmd('');return;}

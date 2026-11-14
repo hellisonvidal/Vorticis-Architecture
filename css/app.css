@@ -192,6 +192,14 @@ table.t input{width:90px}
 @keyframes pg{0%{transform:translateX(-100%)}100%{transform:translateX(330%)}}
 
 #printArea{display:none}
+/* toque (celular/tablet e app Android): botões de Enter/Esc/Apagar e alvos maiores */
+.touchBtns{position:absolute;left:14px;bottom:14px;display:none;padding:4px;gap:4px}
+.touch .touchBtns{display:flex}
+.touchBtns button{height:40px;padding:0 12px;font-size:14px;font-weight:600}
+.touchBtns button[data-act=enter]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.touch .zoomBtns button{width:42px;height:42px}
+.touch .rb{min-height:52px}
+.touch #status button,.touch #status label{min-height:32px}
 @media print{
   body *{visibility:hidden}
   #printArea,#printArea *{visibility:visible}
