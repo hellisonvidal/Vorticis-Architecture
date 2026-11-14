@@ -42,8 +42,9 @@ function exportDXF(){
   const line=(L,a,b)=>{w(0,'LINE');w(8,L);w(10,a.x);w(20,a.y);w(30,0);w(11,b.x);w(21,b.y);w(31,0);};
   const ascii=s=>String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/²/g,'2').replace(/[^\x20-\x7e]/g,'?');
   for(const ob of doc.objects){if(getLayer(ob.layer).visible===false||ob.type==='image')continue;const L=lname(ob.layer);
+    if(ob.type==='wall'){for(const[a,b]of wallOutlineSegs(ob))line(L,a,b);continue;}
     for(const pr of prims(ob)){
-      if(pr.k==='poly'){const n=pr.pts.length;for(let i=0;i<n-(pr.closed?0:1);i++)line(L,pr.pts[i],pr.pts[(i+1)%n]);}
+      if(pr.k==='poly'){if(!pr.stroke)continue;const n=pr.pts.length;for(let i=0;i<n-(pr.closed?0:1);i++)line(L,pr.pts[i],pr.pts[(i+1)%n]);}
       else if(pr.k==='circle'){w(0,'CIRCLE');w(8,L);w(10,pr.c.x);w(20,pr.c.y);w(30,0);w(40,pr.r);}
       else if(pr.k==='arc'){const a0=(pr.ccw?pr.a0:pr.a1)*R2D,a1=(pr.ccw?pr.a1:pr.a0)*R2D;w(0,'ARC');w(8,L);w(10,pr.c.x);w(20,pr.c.y);w(30,0);w(40,pr.r);w(50,(a0+360)%360);w(51,(a1+360)%360);}
       else if(pr.k==='text'){const lines=String(pr.text).split('\n'),n=lines.length,lh=pr.size*1.2;lines.forEach((t,i)=>{const dy=pr.base==='middle'?-(i-(n-1)/2)*lh:(n-1-i)*lh;const p=add(pr.p,rotV(P(0,dy),pr.ang||0));w(0,'TEXT');w(8,L);w(10,p.x);w(20,p.y);w(30,0);w(40,pr.size);w(1,ascii(t));w(50,(pr.ang||0)*R2D);if(pr.align==='center'||pr.base==='middle'){w(72,pr.align==='center'?1:0);w(11,p.x);w(21,p.y);w(31,0);w(73,pr.base==='middle'?2:1);}});}
@@ -153,6 +154,7 @@ async function buildPDF(o){
   const path=(pts,closed)=>{let s=X(pts[0])+' '+Y(pts[0])+' m ';for(let i=1;i<pts.length;i++)s+=X(pts[i])+' '+Y(pts[i])+' l ';return s+(closed?'h ':'');};
   const lw=v=>(Math.max(.1,(v||1)*.18*(o.lwk||1))*mm).toFixed(2);
   const emit=(pr,Lcol,ovFill)=>{
+    if(pr.fill==='BG'&&!pr.stroke&&ovFill===undefined)return; // máscara de vão só serve na tela
     if(pr.k==='poly'||pr.k==='circle'||pr.k==='arc'){let pts=pr.pts,closed=pr.closed;
       if(pr.k==='circle'){pts=ellL(pr.c.x,pr.c.y,pr.r,pr.r,64);closed=true;}
       if(pr.k==='arc'){const a1=pr.ccw?pr.a1:pr.a0,a0=pr.ccw?pr.a0:pr.a1;let A1=a1;while(A1<a0)A1+=2*Math.PI;const n=Math.max(8,Math.ceil((A1-a0)/(Math.PI/24)));pts=[];for(let i=0;i<=n;i++){const t=a0+(A1-a0)*i/n;pts.push(add(pr.c,P(Math.cos(t)*pr.r,Math.sin(t)*pr.r)));}closed=false;}
@@ -170,8 +172,8 @@ async function buildPDF(o){
   const objs=doc.objects.filter(x=>getLayer(x.layer).visible!==false).sort((a,b2)=>ORDER[a.type]-ORDER[b2.type]);
   for(const ob of objs)if(ORDER[ob.type]<5)prims(ob).forEach(pr=>emit(pr,getLayer(ob.layer).color));
   const walls=objs.filter(x=>x.type==='wall');
-  for(const w of walls)c.push('q '+col('L',getLayer(w.layer).color)+' RG '+lw(2.6)+' w 0 j '+path(wallPoly(w),true)+'S Q');
-  for(const w of walls)emit({k:'poly',pts:wallPoly(w),closed:true},null,'WF');
+  for(const w of walls)for(const pp of wallSolidPolys(w))emit({k:'poly',pts:pp,closed:true},null,'WF');
+  for(const w of walls){let s='';for(const[a,b]of wallOutlineSegs(w))s+=X(a)+' '+Y(a)+' m '+X(b)+' '+Y(b)+' l ';c.push('q '+col('L',getLayer(w.layer).color)+' RG '+lw(1.3)+' w 2 J '+s+'S Q');}
   for(const ob of objs)if(ORDER[ob.type]>5)prims(ob).forEach(pr=>emit(pr,getLayer(ob.layer).color));
   c.push('Q');
   // moldura e carimbo

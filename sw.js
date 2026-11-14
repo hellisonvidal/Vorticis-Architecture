@@ -3,7 +3,7 @@
 // depois do primeiro acesso, então tudo funciona sem internet.
 const CACHE = 'vorticis-arch-v3';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icons/icon-192.png', './icons/icon-512.png',
-  './css/app.css', './js/core.js', './js/tools.js', './js/elements.js', './js/smart.js', './js/ui.js', './js/photo.js',
+  './css/app.css', './js/core.js', './js/tools.js', './js/elements.js', './js/smart.js', './js/convert.js', './js/ui.js', './js/photo.js',
   './js/io.js', './js/import.js', './js/export.js', './js/view3d-fallback.js', './js/view3d.js', './js/app.js'];
 const VENDOR = ['./vendor/three/build/three.module.js', './vendor/three/build/three.core.js', './vendor/three/examples/jsm/controls/OrbitControls.js',
   './vendor/pdfjs/build/pdf.min.mjs', './vendor/pdfjs/build/pdf.worker.min.mjs',

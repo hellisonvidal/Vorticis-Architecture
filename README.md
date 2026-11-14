@@ -68,6 +68,20 @@ Você pode **arrastar e soltar** qualquer arquivo na área de desenho.
 
 **DWG e DWF:** são formatos fechados. O navegador consegue **ler** DWG, mas não **gravar**. Para levar o projeto ao AutoCAD, exporte em **DXF**: o AutoCAD, o BricsCAD e o ZWCAD abrem o arquivo e salvam como DWG em um clique. Para converter vários arquivos de uma vez, use o ODA File Converter (gratuito). O DWF clássico (W2D) não é lido, mas o DWFx é. O PDF em prancha substitui o DWF para enviar a clientes.
 
+## Conversão automática para edição
+
+Ao importar DWG, DXF, PDF, SVG ou DWFx, a opção **Converter automaticamente em elementos editáveis** (ligada por padrão) transforma o desenho em elementos de arquitetura:
+
+| O que há no arquivo | Vira |
+|---|---|
+| Pares de linhas paralelas a 7–45 cm (preferindo camadas chamadas parede/wall, se existirem) | **Paredes** com a espessura medida, com cantos e encontros em T unidos |
+| Vão na parede com arco de abertura (inclusive arcos de PDF, que vêm como curvas) | **Porta** de giro ou de 2 folhas, com o lado da dobradiça e o sentido de abertura |
+| Vão ou trecho de parede com linhas de vidro/caixilho | **Janela** |
+| Texto com nome de cômodo (SALA, QUARTO…) dentro de um espaço fechado | **Ambiente** com nome e área |
+| Cotas lineares e alinhadas do DWG/DXF | **Cotas** editáveis |
+
+O que não for reconhecido (mobiliário, hachuras, detalhes) continua como linhas. Um relatório mostra o que foi convertido, com o botão **Desfazer conversão**. Para converter depois, ou só uma parte selecionada, use **Ferramentas → Converter desenho** (comando `CONV`), que permite ajustar a faixa de espessura e escolher o que reconhecer. Os DXF, PDF e SVG exportados pelo próprio app também voltam como paredes, portas, janelas e ambientes.
+
 ## Vista 3D
 
 A vista 3D usa WebGL (three.js), com iluminação, sombras suaves, materiais (reboco, telha, vidro, madeira, grama, água), portas e janelas com caixilhos e vidro, telhado, escada e móveis com volume. Você pode girar, mover e dar zoom com suavidade, ligar e desligar o telhado, as sombras e os contornos, e salvar a imagem. Se o navegador não tiver WebGL, ou se o app for aberto direto da pasta, ela usa um modo 3D simplificado.
@@ -85,6 +99,7 @@ js/core.js              geometria, documento, desenho 2D, snaps, desfazer
 js/tools.js             ferramentas básicas, linha de comando, mouse e teclado
 js/elements.js          portas/janelas por tipo, telhado, escada, hachura, arco
 js/smart.js             ferramentas inteligentes
+js/convert.js           conversão automática de desenho importado em elementos editáveis
 js/ui.js                faixa de opções, painel, camadas, diálogos
 js/photo.js             foto → desenho
 js/io.js                armazenamento e projetos

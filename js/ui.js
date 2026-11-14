@@ -42,7 +42,7 @@ const IC={
 const RIBBON=[
   {id:'arquivo',label:'Arquivo',file:true,groups:[
     ['Projeto',[['act:new','Novo','new'],['act:projects','Abrir projeto','open'],['act:save','Salvar','save'],['act:saveas','Salvar como','saveas']]],
-    ['Importar',[['act:import','Abrir arquivo','import','DWG, BAK, DXF, PDF, SVG, DWFx, imagem ou projeto JSON'],['tool:image','Imagem / foto','image']]],
+    ['Importar',[['act:import','Abrir arquivo','import','DWG, BAK, DXF, PDF, SVG, DWFx, imagem ou projeto JSON'],['act:convert','Converter desenho','wallsfrom','Transforma linhas em paredes, portas, janelas e ambientes editáveis'],['tool:image','Imagem / foto','image']]],
     ['Exportar',[['act:dxf','DXF','dxf','DXF para AutoCAD, BricsCAD, LibreCAD, SketchUp (abre e salva como DWG)'],['act:pdf','PDF','pdf','Prancha em PDF vetorial com escala e carimbo'],['act:ifc','IFC','ifc','Modelo BIM IFC para Revit, ArchiCAD, BIMx'],['act:obj','OBJ 3D','obj','Modelo 3D para SketchUp, Blender, Lumion'],['act:dwg','DWG / DWF','dxf','Como levar o projeto ao AutoCAD (DWG) e substituir o DWF'],['act:svg','SVG','svg'],['act:png','PNG','png'],['act:json','Backup','json','Backup completo do projeto']]],
     ['Saída',[['act:print','Imprimir','print']]]]},
   {id:'inicio',label:'Início',groups:[
@@ -68,7 +68,7 @@ const RIBBON=[
     ['Lote',[['tool:terrainDlg','Por medidas','terrainDlg','TE'],['tool:terrain','Desenho livre','terrain','TL']]],
     ['Foto / imagem',[['tool:image','Anexar','image','IM'],['act:calibrate','Calibrar escala','calibrate'],['act:photo2d','Foto → desenho','photo2d','Gera paredes, portas, janelas e ambientes a partir da foto de uma planta (FD)']]]]},
   {id:'ferr',label:'Ferramentas',groups:[
-    ['Automáticas',[['tool:autoroom','Ambiente auto.','autoroom'],['act:autodim','Cotar paredes','autodim'],['act:autoroof','Telhado auto.','autoroof'],['act:wallsfrom','Paredes de linhas','wallsfrom'],['act:photo2d','Foto → desenho','photo2d']]],
+    ['Automáticas',[['act:convert','Converter desenho','autodim','Transforma linhas importadas (DWG, DXF, PDF…) em paredes, portas, janelas e ambientes editáveis (CONV)'],['tool:autoroom','Ambiente auto.','autoroom'],['act:autodim','Cotar paredes','autodim'],['act:autoroof','Telhado auto.','autoroof'],['act:wallsfrom','Paredes de linhas','wallsfrom'],['act:photo2d','Foto → desenho','photo2d']]],
     ['Edição',[['tool:offset','Deslocar','offset'],['tool:trim','Aparar','trim'],['tool:extend','Estender','extend'],['tool:fillet','Unir canto','fillet'],['act:explode','Explodir','explode'],['act:array','Matriz','array']]],
     ['Análise',[['tool:measure','Distância','measure'],['tool:area','Área','area'],['act:areas','Quadro de áreas','areas']]]]},
   {id:'vista',label:'Vista',groups:[
@@ -342,5 +342,5 @@ const ACT={new:()=>newProject(),projects:()=>projectsDialog(),save:()=>saveNow(t
   view2d:()=>setView('2d'),view3d:()=>setView('3d'),theme:()=>toggleTheme(),grid:()=>toggle('grid'),panel:()=>togglePanel(),
   autoroof:()=>autoRoof(),autodim:()=>autoDimension(),wallsfrom:()=>wallsFromSelection(),explode:()=>explodeSel(),array:()=>arrayDialog(),
   photo2d:()=>{if(mode3d)setView('2d');photoDialog();},calibrate:()=>{const o=selectedImage();if(!o){log('Anexe uma imagem primeiro (IM).','err');return;}if(mode3d)setView('2d');startTool('calibrate',o.id);},
-  zoomin:()=>mode3d?zoom3D(1/1.25):zoomAt(P(W/2,H/2),1.25),zoomout:()=>mode3d?zoom3D(1.25):zoomAt(P(W/2,H/2),1/1.25),extents:()=>zoomExtents(),dwg:()=>dwgInfo()};
+  zoomin:()=>mode3d?zoom3D(1/1.25):zoomAt(P(W/2,H/2),1.25),zoomout:()=>mode3d?zoom3D(1.25):zoomAt(P(W/2,H/2),1/1.25),extents:()=>zoomExtents(),dwg:()=>dwgInfo(),convert:()=>convertDialog()};
 $$('[data-act]').forEach(b=>b.addEventListener('click',()=>ACT[b.dataset.act]()));

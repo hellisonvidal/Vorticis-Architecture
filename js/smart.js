@@ -4,9 +4,9 @@
    ========================================================================= */
 
 /* ---- região delimitada por paredes/linhas ao redor de um ponto (rasterização + contorno) ---- */
-function barrierObjects(){return doc.objects.filter(o=>getLayer(o.layer).visible!==false&&['wall','line','polyline','arc','circle','door','window'].includes(o.type));}
-function regionFromWalls(p){
-  const objs=barrierObjects();if(!objs.length)return null;
+function barrierObjects(wallsOnly){return doc.objects.filter(o=>getLayer(o.layer).visible!==false&&(wallsOnly?['wall','door','window']:['wall','line','polyline','arc','circle','door','window']).includes(o.type));}
+function regionFromWalls(p,wallsOnly){
+  const objs=barrierObjects(wallsOnly);if(!objs.length)return null;
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
   for(const o of objs){const b=objBBox(o);if(!b)continue;x0=Math.min(x0,b.x0);y0=Math.min(y0,b.y0);x1=Math.max(x1,b.x1);y1=Math.max(y1,b.y1);}
   if(!(p.x>x0&&p.x<x1&&p.y>y0&&p.y<y1))return null;

@@ -90,7 +90,7 @@ function parseDXF(text){
       case 'TEXT':{e.text=get(1,'');e.textHeight=n(40,1);e.rotation=n(50)*R;const h=n(72),v=n(73);e.startPoint={x:n(10),y:n(20)};e.endPoint=(h||v)?{x:n(11),y:n(21)}:null;e.halign=h;e.valign=v;break;}
       case 'MTEXT':{e.text=g.filter(p=>p[0]===3).map(p=>p[1]).join('')+get(1,'');e.textHeight=n(40,1);e.insertionPoint={x:n(10),y:n(20)};const dx=get(11);e.rotation=dx!=null?Math.atan2(n(21),n(11)):n(50)*R;e.attachmentPoint=n(71,1);break;}
       case 'INSERT':e.name=get(2,'');e.insertionPoint={x:n(10),y:n(20)};e.xScale=n(41,1);e.yScale=n(42,1);e.rotation=n(50)*R;e.columnCount=n(70,1);e.rowCount=n(71,1);e.columnSpacing=n(44);e.rowSpacing=n(45);break;
-      case 'DIMENSION':e.name=get(2,'');break;
+      case 'DIMENSION':e.name=get(2,'');e.definitionPoint={x:n(10),y:n(20)};if(get(13)!=null){e.subDefinitionPoint1={x:n(13),y:n(23)};e.subDefinitionPoint2={x:n(14),y:n(24)};}e.dimensionType=n(70);e.rotationAngle=n(50)*R;e.text=get(1,'');break;
       case 'ELLIPSE':e.center={x:n(10),y:n(20)};e.majorAxisEndPoint={x:n(11),y:n(21)};e.axisRatio=n(40,1);e.startAngle=n(41,0);e.endAngle=n(42,2*Math.PI);break;
       case 'SPLINE':{e.degree=n(71,3);e.flag=n(70);e.knots=g.filter(p=>p[0]===40).map(p=>f(p[1]));e.controlPoints=[];e.fitPoints=[];let cp_=null,fp=null;
         for(const[c,val]of g){if(c===10){cp_={x:f(val),y:0};e.controlPoints.push(cp_);}else if(c===20&&cp_)cp_.y=f(val);else if(c===11){fp={x:f(val),y:0};e.fitPoints.push(fp);}else if(c===21&&fp)fp.y=f(val);}break;}
@@ -172,8 +172,13 @@ function cadToObjects(cad,k){
           if(e.type==='MTEXT'){const lines=txt.split('\n').length,ap=e.attachmentPoint||1;const row=Math.floor((ap-1)/3);p=add(p,rotV(P(0,-(row===0?h:row===1?(lines*h*1.2)/2:0)),rot));}
           out.push({type:'text',p,text:txt,size:h,ang:rot,layer});break;}
         case 'SOLID':case 'TRACE':out.push({type:'polyline',pts:[e.corner1,e.corner2,e.corner4,e.corner3].map(T),closed:true,layer});break;
-        case 'INSERT':case 'DIMENSION':{const b=cad.blocks.get(e.name);if(!b)break;
-          if(e.type==='DIMENSION'){walk(b.entities,M,depth+1,ln);break;}
+        case 'DIMENSION':{const dt=(e.dimensionType|0)&7;
+          if(e.subDefinitionPoint1&&e.subDefinitionPoint2&&e.definitionPoint&&(dt===0||dt===1)){ // cota linear/alinhada -> cota editável
+            let a=T(e.subDefinitionPoint1),b=T(e.subDefinitionPoint2);const d0=T(e.definitionPoint);
+            if(dt===0){const ang=(+e.rotationAngle||0)+angOf(P(M[0],M[1])),u=P(Math.cos(ang),Math.sin(ang)),n=perp(u);b=sub(b,mul(n,dot(sub(b,a),n)));}
+            if(dist(a,b)>1e-9){const nn=perp(norm(sub(b,a))),tx=String(e.text||'').trim();out.push({type:'dim',a,b,off:dot(sub(d0,a),nn),text:tx&&tx!=='<>'?stripMText(tx).replace('<>',fmt(dist(a,b))):''});break;}}
+          const b=cad.blocks.get(e.name);if(b)walk(b.entities,M,depth+1,ln);break;}
+        case 'INSERT':{const b=cad.blocks.get(e.name);if(!b)break;
           const ip=vx(e.insertionPoint),rot=+e.rotation||0,sx=+e.xScale||1,sy=+e.yScale||1,base=vx(b.base),cs=Math.cos(rot),sn=Math.sin(rot);
           const cols=Math.max(1,e.columnCount|0),rows=Math.max(1,e.rowCount|0);
           for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const off=rotV(P(c*(+e.columnSpacing||0),r*(+e.rowSpacing||0)),rot);
@@ -195,13 +200,13 @@ function cadImportDialog(cad,fname){
   const html='<p><b>'+esc(fname)+'</b> — '+total+' elementos em '+probe.layers.length+' camadas.</p><p class="muted" style="font-size:12px">'+esc(types)+'</p>'+
     '<div class="grid2"><label>Unidade do desenho ('+g.src+')<select id="ciU">'+Object.entries({mm:'Milímetros',cm:'Centímetros',m:'Metros',in:'Polegadas',ft:'Pés'}).map(([k,t])=>'<option value="'+k+'"'+(k===g.u?' selected':'')+'>'+t+'</option>').join('')+'</select></label>'+
     '<label>Destino<select id="ciM"><option value="new"'+(doc.objects.length?'':' selected')+'>Novo projeto</option><option value="add"'+(doc.objects.length?' selected':'')+'>Inserir no projeto atual</option></select></label></div>'+
-    '<p id="ciSz" class="muted"></p><div class="note">Linhas, polilinhas, arcos, círculos, elipses, splines, textos e blocos são importados com suas camadas. Depois use <b>Paredes de linhas</b> ou <b>Ambiente automático</b> para transformar o desenho em elementos de arquitetura.</div>';
+    '<p id="ciSz" class="muted"></p><div class="note">Linhas, polilinhas, arcos, círculos, elipses, splines, textos e blocos são importados com suas camadas. As cotas viram cotas editáveis.</div>'+'<label style="display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="impConv" checked> <b>Converter automaticamente em elementos editáveis</b>&nbsp;(paredes, portas, janelas, ambientes)</label>';
   const upd=()=>{const k=UNIT_K[$('#ciU').value];const b=docBBox(probe.objs.map(o=>({...o,layer:'geral'})));if(b)$('#ciSz').textContent='Tamanho resultante: '+fmt((b.x1-b.x0)*k)+' × '+fmt((b.y1-b.y0)*k)+' m';};
   return modal('Importar desenho CAD',html,[{label:'Cancelar',value:null},{label:'Importar',primary:true,onClick:async()=>{
-    const k=UNIT_K[$('#ciU').value],mode=$('#ciM').value;const r=cadToObjects(cad,k);
+    const k=UNIT_K[$('#ciU').value],mode=$('#ciM').value,conv=$('#impConv').checked;const r=cadToObjects(cad,k);
     if(mode==='new'){await saveNow();loadDoc(newDoc(fname.replace(/\.[^.]+$/,'')),true);const names=(await store.all()).map(x=>x.name);let nm=doc.name;while(names.includes(nm))nm+=' (2)';doc.name=nm;$('#projName').value=nm;}
     for(const ln of r.layers){const id='cad:'+ln;if(!doc.layers.some(l=>l.id===id)){const L=cad.layers[ln];doc.layers.push({id,name:ln,color:L?aciHex(L.colorIndex):'auto',visible:true,locked:false});}}
-    const before=new Set(doc.objects.map(o=>o.id));for(const o of r.objs)addObj(o);sel=new Set(doc.objects.filter(o=>!before.has(o.id)).map(o=>o.id));commit();zoomExtents();sel.clear();buildProps();
+    const before=new Set(doc.objects.map(o=>o.id));for(const o of r.objs)addObj(o);const added=doc.objects.filter(o=>!before.has(o.id));commit();zoomExtents();sel.clear();buildProps();if(conv)afterImportConvert(added);
     log('Importados '+r.objs.length+' elementos de '+fname+' ('+r.layers.length+' camadas).','res');return true;}}],body=>{$('#ciU').addEventListener('change',upd);upd();});
 }
 
@@ -300,26 +305,27 @@ async function pdfImportDialog(buf,fname){
     '<label>Importar como<select id="ppMode"><option value="vec">Desenho vetorial (linhas e textos)</option><option value="img">Imagem (para decalcar / Foto → desenho)</option></select></label>'+
     '<label>Escala da folha<select id="ppS">'+[1,10,20,25,50,75,100,125,200,250,500,1000].map(s=>'<option value="'+s+'"'+(s===100?' selected':'')+'>1:'+s+'</option>').join('')+'</select></label>'+
     '<label>Destino<select id="ppM"><option value="new"'+(doc.objects.length?'':' selected')+'>Novo projeto</option><option value="add"'+(doc.objects.length?' selected':'')+'>Inserir no projeto atual</option></select></label></div>'+
-    '<label style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="ppT" checked> Importar textos</label>'+
+    '<label style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="ppT" checked> Importar textos</label>'+'<label style="display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="impConv" checked> <b>Converter automaticamente em elementos editáveis</b>&nbsp;(paredes, portas, janelas, ambientes)</label>'+
     '<div class="note">PDFs gerados por programas de CAD têm linhas vetoriais: escolha a escala em que a folha foi plotada (ex.: 1:50) para obter medidas reais. PDFs escaneados viram imagem.</div>';
   return modal('Importar PDF',html,[{label:'Cancelar',value:null},{label:'Importar',primary:true,onClick:async()=>{
-    const pn=Math.min(n,Math.max(1,num($('#ppN').value)|0)),mode=$('#ppMode').value,sc=+$('#ppS').value,dest=$('#ppM').value,txt=$('#ppT').checked;
+    const pn=Math.min(n,Math.max(1,num($('#ppN').value)|0)),mode=$('#ppMode').value,sc=+$('#ppS').value,dest=$('#ppM').value,txt=$('#ppT').checked,conv=$('#impConv').checked;
     busy('Processando página '+pn+'…');try{const page=await pdf.getPage(pn);
       if(dest==='new'){await saveNow();loadDoc(newDoc(await uniqueNameFrom(fname)),true);}
       if(mode==='img'){const vp=page.getViewport({scale:Math.min(4,3000/Math.max(page.view[2],page.view[3]))}),c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;await page.render({canvasContext:c.getContext('2d'),viewport:vp,canvas:c}).promise;
         const url=c.toDataURL('image/jpeg',.9),im=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=url;});const wm=(page.view[2]-page.view[0])*25.4/72/1000*sc;unbusy();placeImage(im,url,0,{w:wm,p:P(0,0),opacity:.8,calibrated:true,fit:true,max:3000});return true;}
-      const v=await pdfPageVectors(page);if(!txt)v.texts=[];unbusy();addVectorPage(v,sc,fname);return true;}catch(e){unbusy();log('Falha ao ler o PDF: '+e.message,'err');return true;}}}]);
+      const v=await pdfPageVectors(page);if(!txt)v.texts=[];unbusy();addVectorPage(v,sc,fname,conv);return true;}catch(e){unbusy();log('Falha ao ler o PDF: '+e.message,'err');return true;}}}]);
 }
 async function uniqueNameFrom(fname){const base=fname.replace(/\.[^.]+$/,'');const names=(await store.all()).map(x=>x.name);let nm=base;while(names.includes(nm))nm+=' (2)';return nm;}
 function vectorImportDialog(v,fname,kind){
   if(!v.paths.length&&!v.texts.length)return modal('Arquivo sem geometria','<p>Não encontrei linhas em '+esc(fname)+'.</p>',[{label:'OK',primary:true}]);
   const html='<p><b>'+esc(fname)+'</b> — '+v.paths.length+' traços e '+v.texts.length+' textos.'+(v.note?' '+esc(v.note):'')+'</p><div class="grid2">'+
     '<label>Escala do desenho<select id="vS">'+[1,10,20,25,50,75,100,125,200,250,500,1000].map(s=>'<option value="'+s+'"'+(s===(v.scaleHint||(kind==='SVG'?1:100))?' selected':'')+'>1:'+s+'</option>').join('')+'</select></label>'+
-    '<label>Destino<select id="vM"><option value="new"'+(doc.objects.length?'':' selected')+'>Novo projeto</option><option value="add"'+(doc.objects.length?' selected':'')+'>Inserir no projeto atual</option></select></label></div><p id="vSz" class="muted"></p>';
+    '<label>Destino<select id="vM"><option value="new"'+(doc.objects.length?'':' selected')+'>Novo projeto</option><option value="add"'+(doc.objects.length?' selected':'')+'>Inserir no projeto atual</option></select></label></div><p id="vSz" class="muted"></p>'+'<label style="display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="impConv" checked> <b>Converter automaticamente em elementos editáveis</b>&nbsp;(paredes, portas, janelas, ambientes)</label>';
   const upd=()=>{const k=v.mmPerUnit/1000*(+$('#vS').value);let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;for(const pa of v.paths)for(const q of pa.pts){x0=Math.min(x0,q.x);y0=Math.min(y0,q.y);x1=Math.max(x1,q.x);y1=Math.max(y1,q.y);}if(isFinite(x0))$('#vSz').textContent='Tamanho resultante: '+fmt((x1-x0)*k)+' × '+fmt((y1-y0)*k)+' m';};
-  return modal('Importar '+kind,html,[{label:'Cancelar',value:null},{label:'Importar',primary:true,onClick:async()=>{const sc=+$('#vS').value;if($('#vM').value==='new'){await saveNow();loadDoc(newDoc(await uniqueNameFrom(fname)),true);}addVectorPage(v,sc,fname);return true;}}],body=>{$('#vS').addEventListener('change',upd);upd();});
+  return modal('Importar '+kind,html,[{label:'Cancelar',value:null},{label:'Importar',primary:true,onClick:async()=>{const sc=+$('#vS').value,conv=$('#impConv').checked;if($('#vM').value==='new'){await saveNow();loadDoc(newDoc(await uniqueNameFrom(fname)),true);}addVectorPage(v,sc,fname,conv);return true;}}],body=>{$('#vS').addEventListener('change',upd);upd();});
 }
-function addVectorPage(v,scale,fname){
+function addVectorPage(v,scale,fname,conv){
+  const before=new Set(doc.objects.map(o=>o.id));
   const k=v.mmPerUnit/1000*scale,lid='imp:'+fname.replace(/\.[^.]+$/,'').slice(0,30);
   if(!doc.layers.some(l=>l.id===lid))doc.layers.push({id:lid,name:fname.replace(/\.[^.]+$/,'').slice(0,30),color:'auto',visible:true,locked:false});
   let x0=Infinity,y0=Infinity;for(const pa of v.paths)for(const q of pa.pts){x0=Math.min(x0,q.x);y0=Math.min(y0,q.y);}if(!isFinite(x0)){x0=0;y0=0;}
@@ -328,4 +334,8 @@ function addVectorPage(v,scale,fname){
     if(pts.length===2&&!pa.closed)addObj({type:'line',a:pts[0],b:pts[1],layer:lid});else addObj({type:'polyline',pts,closed:pa.closed&&pts.length>2,layer:lid});n++;}
   for(const t of v.texts){addObj({type:'text',p:T(t.p),text:t.text,size:Math.max(.01,t.size*k),ang:t.ang,layer:lid});n++;}
   commit();zoomExtents();log('Importados '+n+' elementos de '+fname+' (escala 1:'+scale+'). Confira uma medida conhecida com DI; se precisar, use Escala (ESC).','res');
+  if(conv)afterImportConvert(doc.objects.filter(o=>!before.has(o.id)));
 }
+
+// conversão automática logo após importar (pode ser desfeita com Ctrl+Z ou pelo botão do relatório)
+function afterImportConvert(added){const rep=convertDrawing(added);if(rep.walls||rep.rooms){commit();setTimeout(()=>convertReport(rep,true),0);}else setTimeout(()=>convertReport(rep,false),0);}

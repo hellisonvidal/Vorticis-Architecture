@@ -48,6 +48,23 @@ EXT.prims.window=o=>{
   return a;
 };
 
+// contorno da parede em segmentos: faces interrompidas nas portas/janelas e testas só nas pontas livres
+function wallOutlineSegs(w){
+  const{L,u,n}=wallInfo(w),[ea,eb]=wallExt(w),h=w.t/2,P0=(s,o)=>add(add(w.a,mul(u,s)),mul(n,o));
+  const ops=openingsOf([w.id]).map(o=>{const off=Math.max(o.w/2,Math.min(L-o.w/2,o.off));return[off-o.w/2,off+o.w/2];}).sort((a,b)=>a[0]-b[0]);
+  const out=[];for(const side of[h,-h]){let s=-ea;for(const[a,b]of ops){if(a>s+1e-6)out.push([P0(s,side),P0(a,side)]);s=Math.max(s,b);}if(L+eb>s+1e-6)out.push([P0(s,side),P0(L+eb,side)]);}
+  if(ea<1e-6)out.push([P0(0,h),P0(0,-h)]);if(eb<1e-6)out.push([P0(L,h),P0(L,-h)]);
+  return out;
+}
+
+// partes sólidas da parede (sem os vãos) para preenchimento nas exportações
+function wallSolidPolys(w){
+  const{L,u,n}=wallInfo(w),[ea,eb]=wallExt(w),h=w.t/2,P0=(s,o)=>add(add(w.a,mul(u,s)),mul(n,o));
+  const ops=openingsOf([w.id]).map(o=>{const off=Math.max(o.w/2,Math.min(L-o.w/2,o.off));return[off-o.w/2,off+o.w/2];}).sort((a,b)=>a[0]-b[0]);
+  const out=[];let s=-ea;for(const[a,b]of ops){if(a>s+1e-6)out.push([s,a]);s=Math.max(s,b);}if(L+eb>s+1e-6)out.push([s,L+eb]);
+  return out.map(([a,b])=>[P0(a,h),P0(b,h),P0(b,-h),P0(a,-h)]);
+}
+
 /* ---------- telhado ---------- */
 // referencial local: cumeeira sempre ao longo do eixo x local
 function roofFrame(o){
