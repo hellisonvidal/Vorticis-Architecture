@@ -1,4 +1,4 @@
-# Publica uma versão: ao enviar uma tag "v*" (ex.: v1.0.0), cria a release no GitHub com
+# Publica uma versão: ao publicar uma release no GitHub (ou enviar uma tag "v*", ex.: v1.0.0), anexa à release
 #  - o app web compactado (para usar em qualquer servidor ou abrir localmente) e
 #  - o instalador do programa para Windows (Tauri: .exe e .msi).
 name: Release
@@ -6,6 +6,8 @@ name: Release
 on:
   push:
     tags: ['v*']
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -16,7 +18,7 @@ permissions:
   contents: write
 
 env:
-  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+  TAG: ${{ github.event.release.tag_name || github.event.inputs.tag || github.ref_name }}
 
 jobs:
   web:
