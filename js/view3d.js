@@ -152,7 +152,7 @@ function toThree(T,model){
 }
 async function refresh3D(){
   if(!mode3d)return;const T=await init3D();
-  if(!T){$('#view3d').hidden=true;cv3.hidden=false;$('#v3info').textContent='Modo 3D simplificado (WebGL/internet indisponível)';render3D();return;}
+  if(!T){$('#view3d').hidden=true;cv3.hidden=false;$('#v3info').textContent=location.protocol==='file:'?'Modo 3D simplificado: abra pelo link (GitHub Pages) para o 3D completo':'Modo 3D simplificado (WebGL indisponível neste navegador)';render3D();return;}
   $('#view3d').hidden=false;cv3.hidden=true;$('#v3info').textContent='';
   const{THREE,scene,group,renderer,sun,camera}=T;
   while(group.children.length){const c=group.children.pop();c.traverse(x=>{if(x.geometry)x.geometry.dispose();if(x.material)x.material.dispose();});}

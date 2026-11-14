@@ -8,9 +8,10 @@ Não precisa de instalação nem de servidor. Funciona offline e pode ser instal
 
 ## Como usar
 
-- **Rodar localmente:** baixe o repositório e abra `index.html` no Chrome ou Edge. Para o 3D, a leitura de DWG e o PDF funcionarem, sirva a pasta por HTTP, por exemplo com `python -m http.server`, ou use o GitHub Pages.
+- **Rodar localmente:** baixe o repositório e sirva a pasta por HTTP, por exemplo com `python -m http.server`, abrindo `http://localhost:8000`. Abrindo o `index.html` direto da pasta, o navegador bloqueia o 3D completo e os leitores de DWG e PDF (o resto funciona).
 - **Publicar on-line (grátis):** no GitHub, vá em *Settings → Pages → Branch `main` / root*. O app ficará em `https://<usuario>.github.io/Vorticis-Architecture/`.
 - **Instalar como app:** abra o endereço publicado no Chrome ou Edge e clique em *Instalar* (ícone na barra de endereço).
+- **Sem internet:** todas as bibliotecas estão no próprio repositório (pasta `vendor/`). Depois do primeiro acesso pelo link, o app, o 3D e os leitores de DWG e PDF funcionam totalmente offline.
 
 ## Interface
 
@@ -53,7 +54,7 @@ A **barra de opções** abaixo da faixa mostra as opções da ferramenta ativa, 
 
 | Formato | Importar | Exportar |
 |---|---|---|
-| **DWG** (AutoCAD) e **BAK** | ✔ leitura no navegador (LibreDWG em WebAssembly, baixado na primeira vez) | Via DXF (veja abaixo) |
+| **DWG** (AutoCAD) e **BAK** | ✔ leitura no navegador (LibreDWG em WebAssembly, incluído no app) | Via DXF (veja abaixo) |
 | **DXF** | ✔ linhas, polilinhas com arcos, círculos, arcos, elipses, splines, textos, MTEXT, blocos e cotas, com camadas, cores e unidades | ✔ DXF R12, compatível com AutoCAD, BricsCAD, LibreCAD e SketchUp |
 | **PDF** | ✔ vetorial (linhas e textos, na escala escolhida) ou como imagem para decalcar | ✔ **prancha vetorial** A4–A0, com escala real (1:50, 1:100…), carimbo, barra de escala, colorida ou em preto e branco |
 | **IFC** (BIM) | — | ✔ IFC4 com paredes e aberturas reais, portas, janelas, ambientes, telhado, escada e móveis, para Revit, ArchiCAD e BIMcollab |
@@ -69,11 +70,11 @@ Você pode **arrastar e soltar** qualquer arquivo na área de desenho.
 
 ## Vista 3D
 
-A vista 3D usa WebGL (three.js), com iluminação, sombras suaves, materiais (reboco, telha, vidro, madeira, grama, água), portas e janelas com caixilhos e vidro, telhado, escada e móveis com volume. Você pode girar, mover e dar zoom com suavidade, ligar e desligar o telhado, as sombras e os contornos, e salvar a imagem. Sem internet na primeira vez, ela usa um modo 3D simplificado.
+A vista 3D usa WebGL (three.js), com iluminação, sombras suaves, materiais (reboco, telha, vidro, madeira, grama, água), portas e janelas com caixilhos e vidro, telhado, escada e móveis com volume. Você pode girar, mover e dar zoom com suavidade, ligar e desligar o telhado, as sombras e os contornos, e salvar a imagem. Se o navegador não tiver WebGL, ou se o app for aberto direto da pasta, ela usa um modo 3D simplificado.
 
 ## Onde ficam os dados
 
-Os projetos são salvos automaticamente no próprio navegador (IndexedDB). Para levar um projeto a outro aparelho, use **Arquivo → Backup** e depois **Abrir arquivo** no outro aparelho. As bibliotecas externas (3D, DWG, PDF) vêm da CDN jsDelivr em versões fixas e ficam em cache depois do primeiro uso.
+Os projetos são salvos automaticamente no próprio navegador (IndexedDB). Para levar um projeto a outro aparelho, use **Arquivo → Backup** e depois **Abrir arquivo** no outro aparelho. O app não acessa nenhum serviço externo.
 
 ## Estrutura
 
@@ -90,9 +91,14 @@ js/io.js                armazenamento e projetos
 js/import.js            DWG, DXF, PDF, SVG, DWFx, imagens
 js/export.js            DXF, PDF, IFC, OBJ, SVG, PNG
 js/view3d.js            modelo 3D e WebGL; view3d-fallback.js = 3D simplificado
+vendor/                 bibliotecas de terceiros (three.js, pdf.js, LibreDWG) — veja vendor/LEIA-ME.md
 icon.svg, icons/        ícone (variação do Vorticis Monitor em verde e laranja)
 tools/gerar_icone.py    gerador do ícone
 ```
+
+## Licenças de terceiros
+
+O app inclui three.js (MIT), pdf.js (Apache-2.0) e o leitor de DWG baseado no LibreDWG (**GPL-3.0**). Licenças e endereços do código-fonte estão em `vendor/LEIA-ME.md`. Por causa da GPL do leitor de DWG, ao distribuir o app (inclusive comercialmente), o código do Vorticis Architecture deve ser compatível com a GPL-3.0, ou o leitor de DWG precisa ser removido.
 
 ## Próximos passos sugeridos
 

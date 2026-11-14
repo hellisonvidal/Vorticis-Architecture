@@ -2,8 +2,9 @@
 /* =========================================================================
    Importação: DWG/BAK, DXF, PDF, SVG, DWFx, imagens e projeto JSON
    ========================================================================= */
-const CDN={libredwg:'https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.8.3/dist/libredwg-web.js',
-  pdfjs:'https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/build/pdf.min.mjs',pdfworker:'https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/build/pdf.worker.min.mjs'};
+// bibliotecas locais (pasta vendor/): funcionam sem internet; caminhos relativos ao endereço da página
+const LIB=p=>new URL(p,document.baseURI).href;
+const CDN={libredwg:LIB('vendor/libredwg-web/dist/libredwg-web.js'),pdfjs:LIB('vendor/pdfjs/build/pdf.min.mjs'),pdfworker:LIB('vendor/pdfjs/build/pdf.worker.min.mjs')};
 
 /* ---------- entrada de arquivos ---------- */
 $('#fileAny').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)importFile(f);});
@@ -18,7 +19,7 @@ const ascii4=b=>String.fromCharCode(...b.slice(0,6));
 async function importFile(f){
   const ext=(f.name.split('.').pop()||'').toLowerCase(),buf=new Uint8Array(await f.arrayBuffer()),head=ascii4(buf);
   try{
-    if(head.startsWith('AC10')||head.startsWith('AC1.')||head.startsWith('AC2.')){busy('Lendo DWG (na primeira vez o leitor é baixado, ~11 MB)…');const cad=await parseDWG(buf);unbusy();return cadImportDialog(cad,f.name);}
+    if(head.startsWith('AC10')||head.startsWith('AC1.')||head.startsWith('AC2.')){busy('Lendo DWG…');const cad=await parseDWG(buf);unbusy();return cadImportDialog(cad,f.name);}
     if(head.startsWith('%PDF'))return pdfImportDialog(buf,f.name);
     if(buf[0]===0x50&&buf[1]===0x4b)return importZip(buf,f.name);
     if(head.startsWith('(DWF V')||head.startsWith('(W2D V'))throw new Error('DWF clássico (binário W2D) não é suportado no navegador. Abra no Autodesk Viewer/DWG TrueView e salve como DWFx, PDF ou DXF.');
@@ -115,7 +116,7 @@ function parseDXF(text){
 /* ---------- DWG (LibreDWG em WebAssembly) ---------- */
 let LDWG=null;
 async function parseDWG(buf){
-  if(!LDWG){let m;try{m=await import(CDN.libredwg);}catch(e){throw new Error('Não foi possível baixar o leitor de DWG (é preciso internet na primeira vez).');}LDWG={m,lib:await m.LibreDwg.create()};}
+  if(!LDWG){let m;try{m=await import(CDN.libredwg);}catch(e){throw new Error('Não foi possível carregar o leitor de DWG. Abra o app pelo link (GitHub Pages) ou por um servidor local — abrindo o index.html direto da pasta o navegador bloqueia o leitor.');}LDWG={m,lib:await m.LibreDwg.create()};}
   const{m,lib}=LDWG,ab=buf.buffer.slice(buf.byteOffset,buf.byteOffset+buf.byteLength),d=lib.dwg_read_data(ab,m.Dwg_File_Type.DWG);
   if(d==null)throw new Error('O DWG não pôde ser lido (versão não suportada ou arquivo danificado).');
   const db=lib.convert(d);try{lib.dwg_free(d);}catch(e){}
@@ -271,7 +272,7 @@ function parseXPSPage(xml){
 
 /* ---------- PDF (pdf.js) ---------- */
 let PDFJS=null;
-async function loadPdfjs(){if(PDFJS)return PDFJS;let m;try{m=await import(CDN.pdfjs);}catch(e){throw new Error('Não foi possível baixar o leitor de PDF (é preciso internet na primeira vez).');}m.GlobalWorkerOptions.workerSrc=CDN.pdfworker;PDFJS=m;return m;}
+async function loadPdfjs(){if(PDFJS)return PDFJS;let m;try{m=await import(CDN.pdfjs);}catch(e){throw new Error('Não foi possível carregar o leitor de PDF. Abra o app pelo link (GitHub Pages) ou por um servidor local — abrindo o index.html direto da pasta o navegador bloqueia o leitor.');}m.GlobalWorkerOptions.workerSrc=CDN.pdfworker;PDFJS=m;return m;}
 async function pdfPageVectors(page){
   const pj=PDFJS,ops=await page.getOperatorList(),O=pj.OPS,res={paths:[],texts:[],mmPerUnit:25.4/72};let M=[1,0,0,1,0,0];const stack=[];
   const paint=new Set([O.stroke,O.closeStroke,O.fill,O.eoFill,O.fillStroke,O.eoFillStroke,O.closeFillStroke,O.closeEOFillStroke].filter(x=>x!=null));
